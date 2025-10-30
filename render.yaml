@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: erp-setel
+    env: python
+    buildCommand: "pip install -r requirements.txt && python manage.py migrate"
+    startCommand: "gunicorn erp_system.wsgi:application"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.16
+      - key: DJANGO_SETTINGS_MODULE
+        value: erp_system.settings
+      - key: SECRET_KEY
+        generateValue: true
+      - key: WEB_CONCURRENCY
+        value: 4
+      - key: DISABLE_COLLECTSTATIC
+        value: 1
+    plan: free
+    numInstances: 1
