@@ -1,0 +1,174 @@
+<!-- Modal para Editar Técnico (oculto por defecto) -->
+<div class="modal fade" id="editarTecnicoModal" tabindex="-1" aria-labelledby="editarTecnicoModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="editarTecnicoModalLabel">
+                    <i class="bi bi-pencil-square"></i> Editar Técnico
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div id="editarTecnicoModalBody">
+                <!-- El contenido se cargará dinámicamente -->
+                <div class="d-flex justify-content-center my-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Función para abrir el modal de edición
+function abrirModalEdicion(tecnicoId) {
+    const modal = new bootstrap.Modal(document.getElementById('editarTecnicoModal'));
+    const modalBody = document.getElementById('editarTecnicoModalBody');
+    
+    // Mostrar spinner de carga
+    modalBody.innerHTML = `
+        <div class="d-flex justify-content-center my-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        </div>`;
+    
+    // Cargar el formulario de edición
+    fetch(`/tecnicos/${tecnicoId}/editar/`, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.text())
+    .then(html => {
+        modalBody.innerHTML = html;
+        // Inicializar los selectores de fecha
+        const dateInputs = modalBody.querySelectorAll('input[type="date"]');
+        dateInputs.forEach(input => {
+            if (input.value) {
+                const date = new Date(input.value);
+                input.value = date.toISOString().split('T')[0];
+            }
+        });
+        // Inicializar tooltips
+        const tooltipTriggerList = [].slice.call(modalBody.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+        // Mostrar el modal
+        modal.show();
+    })
+    .catch(error => {
+        console.error('Error al cargar el formulario de edición:', error);
+        modalBody.innerHTML = `
+            <div class="alert alert-danger m-3">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                Error al cargar el formulario de edición. Por favor, intente nuevamente.
+            </div>`;
+    });
+}
+
+// Manejar el envío del formulario de edición
+document.addEventListener('submit', function(event) {
+    const form = event.target;
+    if (form.id === 'editarTecnicoForm') {
+        event.preventDefault();
+        
+        const formData = new FormData(form);
+        const submitButton = form.querySelector('button[type="submit"]');
+        const originalButtonText = submitButton.innerHTML;
+        const tecnicoId = form.dataset.tecnicoId;
+        
+        // Mostrar spinner en el botón
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Guardando...';
+        
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Cerrar el modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editarTecnicoModal'));
+                modal.hide();
+                
+                // Mostrar mensaje de éxito
+                const toast = new bootstrap.Toast(document.getElementById('toastSuccess'));
+                const toastMessage = document.getElementById('toastSuccessMessage');
+                toastMessage.textContent = data.message || 'Los cambios se guardaron correctamente';
+                toast.show();
+                
+                // Recargar la página para asegurar que todos los cambios se vean
+                // Usamos un pequeño retraso para permitir que el usuario vea el mensaje de éxito
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } else {
+                // Mostrar errores de validación
+                let errorContainer = form.querySelector('.alert-danger');
+                if (!errorContainer) {
+                    errorContainer = document.createElement('div');
+                    errorContainer.className = 'alert alert-danger mb-3';
+                    form.insertBefore(errorContainer, form.firstChild);
+                }
+                errorContainer.textContent = data.message || 'Error al guardar los cambios';
+                errorContainer.style.display = 'block';
+                
+                // Limpiar errores anteriores
+                form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+                form.querySelectorAll('.invalid-feedback').forEach(el => el.style.display = 'none');
+                
+                // Mostrar errores de campos específicos
+                if (data.errors) {
+                    Object.entries(data.errors).forEach(([field, messages]) => {
+                        const input = form.querySelector(`[name="${field}"]`);
+                        let feedback = form.querySelector(`.invalid-feedback[data-field="${field}"]`);
+                        
+                        if (!feedback && input) {
+                            // Crear elemento de feedback si no existe
+                            feedback = document.createElement('div');
+                            feedback.className = 'invalid-feedback';
+                            feedback.setAttribute('data-field', field);
+                            input.parentNode.insertBefore(feedback, input.nextSibling);
+                        }
+                        
+                        if (input) {
+                            input.classList.add('is-invalid');
+                        }
+                        
+                        if (feedback) {
+                            feedback.textContent = Array.isArray(messages) ? messages.join(' ') : messages;
+                            feedback.style.display = 'block';
+                        }
+                    });
+                }
+                
+                // Desplazarse al primer error
+                const firstError = form.querySelector('.is-invalid');
+                if (firstError) {
+                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error al guardar los cambios:', error);
+            const toast = new bootstrap.Toast(document.getElementById('toastError'));
+            const toastMessage = document.getElementById('toastErrorMessage');
+            toastMessage.textContent = 'Error al conectar con el servidor. Intente nuevamente.';
+            toast.show();
+        })
+        .finally(() => {
+            // Restaurar el botón de envío
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalButtonText;
+        });
+    }
+});
+</script>

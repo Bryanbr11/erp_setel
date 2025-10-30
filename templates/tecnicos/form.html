@@ -81,12 +81,14 @@
                             </div>
                         </div>
                         
-                        <div class="mb-3">
-                            <label for="{{ form.direccion.id_for_label }}" class="form-label">{{ form.direccion.label }}</label>
-                            {{ form.direccion }}
-                            {% if form.direccion.errors %}
-                                <div class="text-danger small">{{ form.direccion.errors.0 }}</div>
-                            {% endif %}
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label for="{{ form.direccion.id_for_label }}" class="form-label">{{ form.direccion.label }}</label>
+                                <input type="text" name="direccion" class="form-control" id="id_direccion" value="{% if form.direccion.value %}{{ form.direccion.value }}{% endif %}" style="height: 38px;">
+                                {% if form.direccion.errors %}
+                                    <div class="text-danger small">{{ form.direccion.errors.0 }}</div>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -142,10 +144,10 @@
                                 {% endif %}
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="{{ form.salario_base.id_for_label }}" class="form-label">{{ form.salario_base.label }}</label>
-                                {{ form.salario_base }}
-                                {% if form.salario_base.errors %}
-                                    <div class="text-danger small">{{ form.salario_base.errors.0 }}</div>
+                                <label for="{{ form.afp.id_for_label }}" class="form-label">{{ form.afp.label }}</label>
+                                {{ form.afp }}
+                                {% if form.afp.errors %}
+                                    <div class="text-danger small">{{ form.afp.errors.0 }}</div>
                                 {% endif %}
                             </div>
                         </div>
@@ -159,32 +161,14 @@
                                 {% endif %}
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="{{ form.afp.id_for_label }}" class="form-label">{{ form.afp.label }}</label>
-                                {{ form.afp }}
-                                {% if form.afp.errors %}
-                                    <div class="text-danger small">{{ form.afp.errors.0 }}</div>
+                                <label for="{{ form.salario_base.id_for_label }}" class="form-label">{{ form.salario_base.label }}</label>
+                                {{ form.salario_base }}
+                                {% if form.salario_base.errors %}
+                                    <div class="text-danger small">{{ form.salario_base.errors.0 }}</div>
                                 {% endif %}
                             </div>
                         </div>
                         
-                        <div class="mb-3">
-                            <label class="form-label">{{ form.especialidades.label }}</label>
-                            <div class="row">
-                                {% for choice in form.especialidades %}
-                                    <div class="col-md-4 mb-2">
-                                        <div class="form-check">
-                                            {{ choice.tag }}
-                                            <label class="form-check-label" for="{{ choice.id_for_label }}">
-                                                {{ choice.choice_label }}
-                                            </label>
-                                        </div>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                            {% if form.especialidades.errors %}
-                                <div class="text-danger small">{{ form.especialidades.errors.0 }}</div>
-                            {% endif %}
-                        </div>
                     </div>
                 </div>
 

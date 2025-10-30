@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Técnicos - Sistema ERP{% endblock %}
+{% block title %}Colaboradores - Sistema ERP{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -8,11 +8,11 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h1 class="h3 mb-0">Gestión de Técnicos</h1>
-                    <p class="text-muted mb-0">Administra toda la información del personal técnico en un solo lugar</p>
+                    <h1 class="h3 mb-0">Gestión de Colaboradores</h1>
+                    <p class="text-muted mb-0">Administra toda la información del personal en un solo lugar</p>
                 </div>
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#nuevoTecnicoModal">
-                    <i class="bi bi-person-plus me-2"></i> Nuevo Técnico
+                    <i class="bi bi-person-plus me-2"></i> Nuevo Colaborador
                 </button>
             </div>
         </div>
@@ -24,69 +24,113 @@
             <div class="container-fluid">
                 <div class="container-fluid">
                     <div class="row g-0" style="min-height: 70vh;">
-                        <!-- Panel izquierdo: Lista de Técnicos -->
+                        <!-- Panel izquierdo: Lista de Colaboradores -->
                         <div class="col-md-4 border-end">
                             <div class="p-3">
                                 <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <h6 class="mb-0 fw-bold">Lista de Técnicos</h6>
+                                    <h6 class="mb-0 fw-bold">Lista de Colaboradores</h6>
                                     <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#nuevoTecnicoModal">
                                         <i class="bi bi-plus-lg"></i> Nuevo
                                     </button>
                                 </div>
                                 
-                                <div class="mb-3">
-                                    <div class="input-group">
+                                <form method="get" class="mb-3" id="filtrosForm">
+                                    <div class="input-group mb-3">
                                         <span class="input-group-text bg-white border-end-0">
                                             <i class="bi bi-search text-muted"></i>
                                         </span>
-                                        <input type="text" class="form-control border-start-0" placeholder="Buscar técnico...">
+                                        <input type="text" name="search" class="form-control border-start-0" placeholder="Buscar colaborador..." value="{{ search }}" onkeypress="if(event.keyCode === 13) { event.preventDefault(); this.form.submit(); }">
+                                        {% if search %}
+                                        <a href="?" class="btn btn-outline-secondary" type="button">
+                                            <i class="bi bi-x"></i>
+                                        </a>
+                                        {% endif %}
                                     </div>
-                                </div>
-                                
-                                <div class="row g-2 mb-3">
-                                    <div class="col">
-                                        <select class="form-select form-select-sm">
-                                            <option>Todos los departamentos</option>
-                                            <option>Operaciones</option>
-                                            <option>Soporte Técnico</option>
-                                            <option>Desarrollo</option>
-                                        </select>
+                                    
+                                    <div class="row g-2 mb-3">
+                                        <div class="col">
+                                            <select name="departamento" class="form-select form-select-sm">
+                                                <option value="">Todos los departamentos</option>
+                                                {% for value, label in departamentos %}
+                                                <option value="{{ value }}" {% if departamento_selected == value %}selected{% endif %}>
+                                                    {{ label }}
+                                                </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col">
+                                            <select name="estado" class="form-select form-select-sm">
+                                                <option value="">Todos los estados</option>
+                                                {% for estado_value, estado_label in estados %}
+                                                <option value="{{ estado_value }}" {% if estado_selected == estado_value %}selected{% endif %}>
+                                                    {{ estado_label }}
+                                                </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
                                     </div>
-                                    <div class="col">
-                                        <select class="form-select form-select-sm">
-                                            <option>Todos los estados</option>
-                                            <option>Activo</option>
-                                            <option>Vacaciones</option>
-                                            <option>Inactivo</option>
-                                        </select>
+                                    
+                                    <div class="d-flex justify-content-between">
+                                        <button type="submit" class="btn btn-primary btn-sm">
+                                            <i class="bi bi-funnel"></i> Aplicar filtros
+                                        </button>
+                                        {% if search or estado_selected or departamento_selected %}
+                                        <a href="?" class="btn btn-outline-secondary btn-sm">
+                                            <i class="bi bi-x-circle"></i> Limpiar filtros
+                                        </a>
+                                        {% endif %}
                                     </div>
-                                </div>
+                                </form>
                                 
                                 <div class="list-group list-group-flush" style="max-height: 60vh; overflow-y: auto;">
                                     <!-- Lista de técnicos dinámica -->
                                     {% for tecnico in tecnicos %}
-                                    <a href="#" class="list-group-item list-group-item-action border-0 py-3 tecnico-item" 
+                                    <a href="#" class="list-group-item list-group-item-action border-0 py-2 tecnico-item" 
                                        data-tecnico-id="{{ tecnico.id }}"
                                        onclick="cargarDetalleTecnico(event, '{{ tecnico.id }}')">
                                         <div class="d-flex align-items-center">
-                                            <div class="position-relative me-3">
-                                                <img src="https://ui-avatars.com/api/?name={{ tecnico.first_name|urlencode }}+{{ tecnico.last_name|urlencode }}&background=2563eb&color=fff" 
-                                                     class="rounded-circle" width="40" height="40" alt="{{ tecnico.get_full_name }}">
+                                            <div class="position-relative me-3 flex-shrink-0">
+                                                {% if tecnico.foto %}
+                                                    <img src="{{ tecnico.foto.url }}" 
+                                                         class="rounded-circle object-fit-cover" 
+                                                         width="45" 
+                                                         height="45" 
+                                                         alt="{{ tecnico.get_full_name }}"
+                                                         style="object-fit: cover;">
+                                                {% else %}
+                                                    {% with full_name=tecnico.usuario.get_full_name|default:tecnico.usuario.username %}
+                                                    <img src="https://ui-avatars.com/api/?name={{ full_name|urlencode }}&background=2563eb&color=fff" 
+                                                         class="rounded-circle" 
+                                                         width="45" 
+                                                         height="45" 
+                                                         alt="{{ full_name }}">
+                                                    {% endwith %}
+                                                {% endif %}
                                                 <span class="position-absolute bottom-0 end-0 bg-{% if tecnico.estado == 'activo' %}success{% elif tecnico.estado == 'vacaciones' %}warning{% else %}secondary{% endif %} rounded-circle p-1 border border-2 border-white"></span>
                                             </div>
                                             <div class="flex-grow-1">
-                                                <h6 class="mb-0">{{ tecnico.get_full_name }}</h6>
-                                                <small class="text-muted">{{ tecnico.cargo|default:"Técnico" }}</small>
+                                                <div class="d-flex flex-column">
+                                                    <div class="d-flex flex-column">
+                                                    <h6 class="mb-0 fw-semibold text-capitalize">
+                                                        {% with full_name=tecnico.usuario.get_full_name|default:tecnico.usuario.username %}
+                                                            {{ full_name|lower|title }}
+                                                        {% endwith %}
+                                                    </h6>
+                                                    <div class="d-flex align-items-center">
+                                                        <small class="text-muted me-2">{{ tecnico.puesto|default:'Sin puesto' }}</small>
+                                                        <span class="badge bg-{% if tecnico.estado == 'activo' %}success{% elif tecnico.estado == 'vacaciones' %}warning{% else %}secondary{% endif %} bg-opacity-10 text-{% if tecnico.estado == 'activo' %}success{% elif tecnico.estado == 'vacaciones' %}warning{% else %}secondary{% endif %} text-uppercase" style="font-size: 0.65rem; padding: 0.2rem 0.4rem;">
+                                                            {{ tecnico.get_estado_display|default:"INACTIVO" }}
+                                                        </span>
+                                                    </div>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <span class="badge bg-{% if tecnico.estado == 'activo' %}success{% elif tecnico.estado == 'vacaciones' %}warning{% else %}secondary{% endif %} bg-opacity-10 text-{% if tecnico.estado == 'activo' %}success{% elif tecnico.estado == 'vacaciones' %}warning{% else %}secondary{% endif %}">
-                                                {{ tecnico.get_estado_display|default:"Inactivo" }}
-                                            </span>
                                         </div>
                                     </a>
                                     {% empty %}
                                     <div class="text-center py-4">
                                         <i class="bi bi-people fs-1 text-muted"></i>
-                                        <p class="text-muted mt-2">No hay técnicos registrados</p>
+                                        <p class="text-muted mt-2">No hay colaboradores registrados</p>
                                     </div>
                                     {% endfor %}
                                 </div>
@@ -98,8 +142,8 @@
                             <div id="detalle-tecnico" class="p-4">
                                 <div class="text-center py-5">
                                     <i class="bi bi-person-lines-fill fs-1 text-muted"></i>
-                                    <h5 class="mt-3">Selecciona un técnico</h5>
-                                    <p class="text-muted">Haz clic en un técnico de la lista para ver sus detalles</p>
+                                    <h5 class="mt-3">Selecciona un colaborador</h5>
+                                    <p class="text-muted">Haz clic en un Colaborador de la lista para ver sus detalles</p>
                                 </div>
                             </div>
                         </div>
@@ -110,8 +154,30 @@
     </div>
 </div>
 
+<!-- Modal para Editar Técnico (oculto por defecto) -->
+<div class="modal fade" id="editarTecnicoModal" tabindex="-1" aria-labelledby="editarTecnicoModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="editarTecnicoModalLabel">
+                    <i class="bi bi-pencil-square"></i> Editar Técnico
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div id="editarTecnicoModalBody">
+                <!-- El contenido se cargará dinámicamente -->
+                <div class="d-flex justify-content-center my-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Modal para Nuevo Técnico (oculto por defecto) -->
-<div class="modal fade" id="nuevoTecnicoModal" tabindex="-1" aria-labelledby="nuevoTecnicoModalLabel" aria-hidden="true">
+<div class="modal fade" id="nuevoTecnicoModal" tabindex="-1" aria-labelledby="nuevoTecnicoModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header bg-primary text-white">
@@ -123,50 +189,86 @@
             <form method="post" enctype="multipart/form-data" id="tecnicoForm" action="{% url 'tecnicos:create' %}">
                 {% csrf_token %}
                 <div class="modal-body">
+                    <!-- Mostrar errores generales del formulario -->
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="id_first_name" class="form-label">Nombre *</label>
-                            <input type="text" name="first_name" class="form-control" maxlength="150" required id="id_first_name" placeholder="Ingresa el nombre">
+                            <label for="{{ form.first_name.id_for_label }}" class="form-label">{{ form.first_name.label }}{% if form.first_name.field.required %} *{% endif %}</label>
+                            {{ form.first_name }}
+                            {% if form.first_name.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.first_name.errors.0 }}
+                                </div>
+                            {% endif %}
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="id_last_name" class="form-label">Apellido *</label>
-                            <input type="text" name="last_name" class="form-control" maxlength="150" required id="id_last_name" placeholder="Ingresa el apellido">
+                            <label for="{{ form.last_name.id_for_label }}" class="form-label">{{ form.last_name.label }}{% if form.last_name.field.required %} *{% endif %}</label>
+                            {{ form.last_name }}
+                            {% if form.last_name.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.last_name.errors.0 }}
+                                </div>
+                            {% endif %}
                         </div>
                     </div>
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="id_rut" class="form-label">RUT *</label>
-                            <input type="text" name="rut" class="form-control" placeholder="12.345.678-9" id="id_rut" required>
+                            <label for="{{ form.rut.id_for_label }}" class="form-label">{{ form.rut.label }}{% if form.rut.field.required %} *{% endif %}</label>
+                            {{ form.rut }}
+                            {% if form.rut.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.rut.errors.0 }}
+                                </div>
+                            {% endif %}
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="id_fecha_nacimiento" class="form-label">Fecha de Nacimiento</label>
-                            <input type="date" name="fecha_nacimiento" class="form-control" id="id_fecha_nacimiento">
+                            <label for="{{ form.fecha_nacimiento.id_for_label }}" class="form-label">{{ form.fecha_nacimiento.label }}{% if form.fecha_nacimiento.field.required %} *{% endif %}</label>
+                            {{ form.fecha_nacimiento }}
+                            {% if form.fecha_nacimiento.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.fecha_nacimiento.errors.0 }}
+                                </div>
+                            {% endif %}
                         </div>
                     </div>
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="id_ubicacion" class="form-label">Ubicación</label>
-                            <select name="ubicacion" class="form-select" id="id_ubicacion">
-                                <option value="">Seleccionar ubicación</option>
-                                <option value="santiago">Santiago</option>
-                                <option value="valparaiso">Valparaíso</option>
-                                <option value="concepcion">Concepción</option>
-                                <option value="antofagasta">Antofagasta</option>
-                                <option value="temuco">Temuco</option>
-                                <option value="iquique">Iquique</option>
-                            </select>
+                            <label for="{{ form.ubicacion.id_for_label }}" class="form-label">{{ form.ubicacion.label }}{% if form.ubicacion.field.required %} *{% endif %}</label>
+                            {{ form.ubicacion }}
+                            {% if form.ubicacion.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.ubicacion.errors.0 }}
+                                </div>
+                            {% endif %}
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="id_email" class="form-label">Email *</label>
-                            <input type="email" name="email" class="form-control" maxlength="320" required id="id_email" placeholder="correo@ejemplo.com">
+                            <label for="{{ form.email.id_for_label }}" class="form-label">{{ form.email.label }}{% if form.email.field.required %} *{% endif %}</label>
+                            {{ form.email }}
+                            {% if form.email.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.email.errors.0 }}
+                                </div>
+                            {% endif %}
                         </div>
                     </div>
 
                     <div class="mb-3">
-                        <label for="id_direccion" class="form-label">Dirección</label>
-                        <textarea name="direccion" class="form-control" rows="3" id="id_direccion"></textarea>
+                        <label for="{{ form.direccion.id_for_label }}" class="form-label">{{ form.direccion.label }}{% if form.direccion.field.required %} *{% endif %}</label>
+                        {{ form.direccion }}
+                        {% if form.direccion.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.direccion.errors.0 }}
+                            </div>
+                        {% endif %}
                     </div>
 
                     <!-- Información Laboral -->
@@ -179,98 +281,88 @@
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label for="id_departamento" class="form-label">Departamento</label>
-                                    <select name="departamento" class="form-select" id="id_departamento" style="pointer-events: auto !important; z-index: 10004 !important; position: relative !important;">
-                                        <option value="">Seleccionar departamento</option>
-                                        <option value="operaciones">Operaciones</option>
-                                        <option value="mantenimiento">Mantenimiento</option>
-                                        <option value="administracion">Administración</option>
-                                        <option value="ventas">Ventas</option>
-                                        <option value="soporte">Soporte Técnico</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="id_puesto" class="form-label">Puesto</label>
-                                    <input type="text" name="puesto" class="form-control" id="id_puesto" style="pointer-events: auto !important; z-index: 10004 !important; position: relative !important;">
-                                </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="id_fecha_ingreso" class="form-label">Fecha de Ingreso</label>
-                                    <input type="date" name="fecha_ingreso" class="form-control" id="id_fecha_ingreso" style="pointer-events: auto !important; z-index: 10004 !important; position: relative !important;">
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="id_codigo_empleado" class="form-label">Código de Empleado *</label>
-                                    <input type="text" name="codigo_empleado" class="form-control" maxlength="20" id="id_codigo_empleado" required style="pointer-events: auto !important; z-index: 10004 !important; position: relative !important;">
-                                </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="id_estado" class="form-label">Estado</label>
-                                    <select name="estado" class="form-select" id="id_estado" style="pointer-events: auto !important; z-index: 10004 !important; position: relative !important;">
-                                        <option value="">Seleccionar estado</option>
-                                        <option value="activo">Activo</option>
-                                        <option value="inactivo">Inactivo</option>
-                                        <option value="vacaciones">En Vacaciones</option>
-                                        <option value="licencia">En Licencia</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="id_salario_base" class="form-label">Salario Base</label>
-                                    <input type="number" name="salario_base" class="form-control" step="0.01" id="id_salario_base" style="pointer-events: auto !important; z-index: 10004 !important; position: relative !important;">
-                                </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="id_prevision" class="form-label">Previsión</label>
-                                    <select name="prevision" class="form-select" id="id_prevision" style="pointer-events: auto !important; z-index: 10004 !important; position: relative !important;">
-                                        <option value="">Seleccionar previsión</option>
-                                        <option value="fonasa">FONASA</option>
-                                        <option value="isapre_banmedica">Isapre Banmédica</option>
-                                        <option value="isapre_colmena">Isapre Colmena</option>
-                                        <option value="isapre_consalud">Isapre Consalud</option>
-                                        <option value="isapre_cruz_blanca">Isapre Cruz Blanca</option>
-                                        <option value="isapre_vida_tres">Isapre Vida Tres</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="id_afp" class="form-label">AFP</label>
-                                    <select name="afp" class="form-select" id="id_afp" style="pointer-events: auto !important; z-index: 10004 !important; position: relative !important;">
-                                        <option value="">Seleccionar AFP</option>
-                                        <option value="afp_capital">AFP Capital</option>
-                                        <option value="afp_provida">AFP Provida</option>
-                                        <option value="afp_habitat">AFP Habitat</option>
-                                        <option value="afp_planvital">AFP PlanVital</option>
-                                        <option value="afp_cuprum">AFP Cuprum</option>
-                                        <option value="afp_modelo">AFP Modelo</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label">Especialidades</label>
-                                <div class="row">
-                                    <div class="col-md-4 mb-2">
-                                        <div class="form-check">
-                                            <input type="checkbox" name="especialidades" value="1" class="form-check-input" id="id_especialidades_0" style="pointer-events: auto !important; z-index: 10004 !important; position: relative !important;">
-                                            <label class="form-check-label" for="id_especialidades_0">
-                                                Electricidad
-                                            </label>
+                                    <label for="{{ form.departamento.id_for_label }}" class="form-label">{{ form.departamento.label }}{% if form.departamento.field.required %} *{% endif %}</label>
+                                    {{ form.departamento }}
+                                    {% if form.departamento.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.departamento.errors.0 }}
                                         </div>
-                                    </div>
-                                    <div class="col-md-4 mb-2">
-                                        <div class="form-check">
-                                            <input type="checkbox" name="especialidades" value="2" class="form-check-input" id="id_especialidades_1" style="pointer-events: auto !important; z-index: 10004 !important; position: relative !important;">
-                                            <label class="form-check-label" for="id_especialidades_1">
-                                                Redes
-                                            </label>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.puesto.id_for_label }}" class="form-label">{{ form.puesto.label }}{% if form.puesto.field.required %} *{% endif %}</label>
+                                    {{ form.puesto }}
+                                    {% if form.puesto.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.puesto.errors.0 }}
                                         </div>
-                                    </div>
+                                    {% endif %}
                                 </div>
                             </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.fecha_ingreso.id_for_label }}" class="form-label">{{ form.fecha_ingreso.label }}{% if form.fecha_ingreso.field.required %} *{% endif %}</label>
+                                    {{ form.fecha_ingreso }}
+                                    {% if form.fecha_ingreso.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.fecha_ingreso.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.codigo_empleado.id_for_label }}" class="form-label">{{ form.codigo_empleado.label }}{% if form.codigo_empleado.field.required %} *{% endif %}</label>
+                                    {{ form.codigo_empleado }}
+                                    {% if form.codigo_empleado.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.codigo_empleado.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.estado.id_for_label }}" class="form-label">{{ form.estado.label }}{% if form.estado.field.required %} *{% endif %}</label>
+                                    {{ form.estado }}
+                                    {% if form.estado.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.estado.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.afp.id_for_label }}" class="form-label">{{ form.afp.label }}{% if form.afp.field.required %} *{% endif %}</label>
+                                    {{ form.afp }}
+                                    {% if form.afp.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.afp.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.prevision.id_for_label }}" class="form-label">{{ form.prevision.label }}{% if form.prevision.field.required %} *{% endif %}</label>
+                                    {{ form.prevision }}
+                                    {% if form.prevision.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.prevision.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.salario_base.id_for_label }}" class="form-label">{{ form.salario_base.label }}{% if form.salario_base.field.required %} *{% endif %}</label>
+                                    {{ form.salario_base }}
+                                    {% if form.salario_base.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.salario_base.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
                         </div>
                     </div>
 
@@ -284,23 +376,47 @@
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label for="id_telefono" class="form-label">Teléfono</label>
-                                    <input type="text" name="telefono" class="form-control" placeholder="+56 9 1234 5678" id="id_telefono" style="pointer-events: auto !important; z-index: 10004 !important; position: relative !important;">
+                                    <label for="{{ form.telefono.id_for_label }}" class="form-label">{{ form.telefono.label }}{% if form.telefono.field.required %} *{% endif %}</label>
+                                    {{ form.telefono }}
+                                    {% if form.telefono.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.telefono.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">{{ form.telefono.help_text }}</div>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label for="id_telefono_emergencia" class="form-label">Teléfono de Emergencia</label>
-                                    <input type="text" name="telefono_emergencia" class="form-control" placeholder="+56 9 1234 5678" id="id_telefono_emergencia" style="pointer-events: auto !important; z-index: 10004 !important; position: relative !important;">
+                                    <label for="{{ form.telefono_emergencia.id_for_label }}" class="form-label">{{ form.telefono_emergencia.label }}{% if form.telefono_emergencia.field.required %} *{% endif %}</label>
+                                    {{ form.telefono_emergencia }}
+                                    {% if form.telefono_emergencia.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.telefono_emergencia.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">{{ form.telefono_emergencia.help_text }}</div>
                                 </div>
                             </div>
 
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label for="id_nombre_emergencia" class="form-label">Contacto de Emergencia</label>
-                                    <input type="text" name="nombre_emergencia" class="form-control" id="id_nombre_emergencia" style="pointer-events: auto !important; z-index: 10004 !important; position: relative !important;">
+                                    <label for="{{ form.nombre_emergencia.id_for_label }}" class="form-label">{{ form.nombre_emergencia.label }}{% if form.nombre_emergencia.field.required %} *{% endif %}</label>
+                                    {{ form.nombre_emergencia }}
+                                    {% if form.nombre_emergencia.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.nombre_emergencia.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">{{ form.nombre_emergencia.help_text }}</div>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label for="id_linkedin" class="form-label">LinkedIn</label>
-                                    <input type="url" name="linkedin" class="form-control" placeholder="https://linkedin.com/in/usuario" id="id_linkedin" style="pointer-events: auto !important; z-index: 10004 !important; position: relative !important;">
+                                    <label for="{{ form.linkedin.id_for_label }}" class="form-label">{{ form.linkedin.label }}{% if form.linkedin.field.required %} *{% endif %}</label>
+                                    {{ form.linkedin }}
+                                    {% if form.linkedin.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.linkedin.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">{{ form.linkedin.help_text }}</div>
                                 </div>
                             </div>
                         </div>
@@ -316,20 +432,36 @@
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label for="id_foto" class="form-label">Foto de Perfil</label>
-                                    <input type="file" name="foto" class="form-control" accept="image/*" id="id_foto" style="pointer-events: auto !important; z-index: 10004 !important; position: relative !important;">
-                                    <div class="form-text">Formatos permitidos: JPG, PNG, GIF. Tamaño máximo: 5MB</div>
+                                    <label for="{{ form.foto.id_for_label }}" class="form-label">{{ form.foto.label }}{% if form.foto.field.required %} *{% endif %}</label>
+                                    {{ form.foto }}
+                                    {% if form.foto.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.foto.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">{{ form.foto.help_text }}</div>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label for="id_postre_favorito" class="form-label">Postre Favorito</label>
-                                    <input type="text" name="postre_favorito" class="form-control" maxlength="100" id="id_postre_favorito" style="pointer-events: auto !important; z-index: 10004 !important; position: relative !important;">
-                                    <div class="form-text">Campo opcional y divertido 😊</div>
+                                    <label for="{{ form.postre_favorito.id_for_label }}" class="form-label">{{ form.postre_favorito.label }}{% if form.postre_favorito.field.required %} *{% endif %}</label>
+                                    {{ form.postre_favorito }}
+                                    {% if form.postre_favorito.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.postre_favorito.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">{{ form.postre_favorito.help_text }}</div>
                                 </div>
                             </div>
 
                             <div class="mb-3">
-                                <label for="id_observaciones" class="form-label">Observaciones</label>
-                                <textarea name="observaciones" class="form-control" rows="4" id="id_observaciones" style="pointer-events: auto !important; z-index: 10004 !important; position: relative !important;"></textarea>
+                                <label for="{{ form.observaciones.id_for_label }}" class="form-label">{{ form.observaciones.label }}{% if form.observaciones.field.required %} *{% endif %}</label>
+                                {{ form.observaciones }}
+                                {% if form.observaciones.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.observaciones.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">{{ form.observaciones.help_text }}</div>
                             </div>
                         </div>
                     </div>
@@ -348,7 +480,22 @@
 </div>
 
     <style>
-        /* Estilos específicos para el gestor de técnicos */
+        /* Estilos específicos para el gestor de colaboradores */
+        /* Estilos para mantener el color del texto del colaborador */
+        .tecnico-item {
+            color: inherit;
+            text-decoration: none;
+        }
+        
+        .tecnico-item:hover, .tecnico-item:focus, .tecnico-item.active {
+            color: inherit;
+            background-color: #f8f9fa;
+        }
+        
+        .tecnico-item h6 {
+            color: #212529;
+        }
+        
         .card {
             border: none;
             border-radius: 15px;
@@ -592,6 +739,214 @@
                 });
         }
         
+        // Función para abrir el modal de edición
+        function abrirModalEdicion(tecnicoId) {
+            const modal = new bootstrap.Modal(document.getElementById('editarTecnicoModal'));
+            const modalBody = document.getElementById('editarTecnicoModalBody');
+            
+            // Mostrar spinner de carga
+            modalBody.innerHTML = `
+                <div class="d-flex justify-content-center my-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                </div>`;
+            
+            // Cargar el formulario de edición
+            fetch(`/tecnicos/${tecnicoId}/editar/`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.text())
+            .then(html => {
+                modalBody.innerHTML = html;
+                // Inicializar los selectores de fecha
+                const dateInputs = modalBody.querySelectorAll('input[type="date"]');
+                dateInputs.forEach(input => {
+                    if (input.value) {
+                        const date = new Date(input.value);
+                        input.value = date.toISOString().split('T')[0];
+                    }
+                });
+                // Inicializar tooltips
+                const tooltipTriggerList = [].slice.call(modalBody.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                tooltipTriggerList.map(function (tooltipTriggerEl) {
+                    return new bootstrap.Tooltip(tooltipTriggerEl);
+                });
+                // Mostrar el modal
+                modal.show();
+            })
+            .catch(error => {
+                console.error('Error al cargar el formulario de edición:', error);
+                modalBody.innerHTML = `
+                    <div class="alert alert-danger m-3">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        Error al cargar el formulario de edición. Por favor, intente nuevamente.
+                    </div>`;
+            });
+        }
+
+        // Función para actualizar la lista de técnicos
+        function actualizarItemListaTecnicos(tecnicoData) {
+            console.log('Actualizando ítem de lista para técnico:', tecnicoData);
+            const item = document.querySelector(`.tecnico-item[data-tecnico-id="${tecnicoData.tecnico_id}"]`);
+            if (!item) {
+                console.error('No se encontró el ítem del técnico:', tecnicoData.tecnico_id);
+                return;
+            }
+            
+            console.log('Elemento encontrado:', item);
+            
+            // Actualizar la foto si existe
+            const fotoElement = item.querySelector('img');
+            if (fotoElement) {
+                if (tecnicoData.foto_url) {
+                    // Forzar la recarga de la imagen
+                    fotoElement.src = tecnicoData.foto_url + '?t=' + new Date().getTime();
+                } else if (tecnicoData.first_name || tecnicoData.last_name) {
+                    // Si no hay foto, usar las iniciales
+                    const iniciales = (tecnicoData.first_name ? tecnicoData.first_name[0] : '') + 
+                                    (tecnicoData.last_name ? tecnicoData.last_name[0] : '');
+                    fotoElement.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(iniciales)}&background=2563eb&color=fff`;
+                }
+                fotoElement.alt = tecnicoData.nombre_completo || '';
+            }
+            
+            // Actualizar el nombre
+            const nombreElement = item.querySelector('h6');
+            if (nombreElement) {
+                const nombreCompleto = tecnicoData.nombre_completo || 
+                                     ((tecnicoData.first_name || '') + ' ' + (tecnicoData.last_name || '')).trim();
+                nombreElement.textContent = nombreCompleto.toLowerCase();
+            }
+            
+            // Actualizar el departamento
+            const deptoElement = item.querySelector('small.text-muted');
+            if (deptoElement && tecnicoData.departamento_display) {
+                deptoElement.textContent = tecnicoData.departamento_display.toLowerCase();
+            }
+            
+            // Actualizar el estado
+            const estadoBadge = item.querySelector('.badge');
+            if (estadoBadge && tecnicoData.estado) {
+                const estadoClases = {
+                    'activo': 'bg-success bg-opacity-10 text-success',
+                    'inactivo': 'bg-secondary bg-opacity-10 text-secondary',
+                    'vacaciones': 'bg-warning bg-opacity-10 text-warning',
+                    'licencia': 'bg-info bg-opacity-10 text-info',
+                    'prueba': 'bg-primary bg-opacity-10 text-primary'
+                };
+                
+                const estadoClase = estadoClases[tecnicoData.estado] || 'bg-secondary bg-opacity-10 text-secondary';
+                estadoBadge.className = `badge ${estadoClase} text-uppercase`;
+                estadoBadge.style.cssText = 'font-size: 0.65rem; padding: 0.2rem 0.4rem;';
+                estadoBadge.textContent = tecnicoData.estado_display || tecnicoData.estado || 'Desconocido';
+            }
+            
+            // Actualizar el indicador de estado (punto verde/rojo)
+            const estadoIndicator = item.querySelector('.position-absolute');
+            if (estadoIndicator) {
+                const estadoColor = tecnicoData.estado === 'activo' ? 'bg-success' : 'bg-secondary';
+                estadoIndicator.className = `position-absolute bottom-0 end-0 ${estadoColor} rounded-circle p-1 border border-2 border-white`;
+            }
+            
+            console.log('Ítem actualizado correctamente');
+        }
+
+        // Manejar el envío del formulario de edición
+        document.addEventListener('submit', function(event) {
+            const form = event.target;
+            if (form.id === 'editarTecnicoForm') {
+                event.preventDefault();
+                
+                // Mostrar indicador de carga
+                const submitButton = form.querySelector('button[type="submit"]');
+                const originalButtonText = submitButton.innerHTML;
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Guardando...';
+                
+                const formData = new FormData(form);
+                const tecnicoId = form.dataset.tecnicoId;
+                
+                fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Cerrar el modal
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('editarTecnicoModal'));
+                        modal.hide();
+                        
+                        // Actualizar la lista de técnicos
+                        actualizarItemListaTecnicos(data);
+                        
+                        // Actualizar el detalle del técnico si está visible
+                        const detalleVisible = document.querySelector('#detalle-tecnico');
+                        if (detalleVisible && detalleVisible.style.display !== 'none') {
+                            actualizarDetalleTecnico(data);
+                        }
+                        
+                        // Mostrar mensaje de éxito
+                        const toast = new bootstrap.Toast(document.getElementById('toastSuccess'));
+                        const toastMessage = document.getElementById('toastSuccessMessage');
+                        toastMessage.textContent = data.message || 'Los cambios se han guardado correctamente.';
+                        toast.show();
+                        
+                    } else {
+                        // Mostrar errores del formulario
+                        const errorDiv = form.querySelector('.alert-danger') || document.createElement('div');
+                        errorDiv.className = 'alert alert-danger';
+                        errorDiv.innerHTML = `
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            ${data.message || 'Por favor, corrija los errores a continuación.'}
+                            ${data.errors ? '<br><small>' + Object.values(data.errors).flat().join('<br>') + '</small>' : ''}
+                        `;
+                        
+                        // Insertar el mensaje de error después del primer elemento del formulario
+                        if (form.firstChild) {
+                            form.insertBefore(errorDiv, form.firstChild);
+                        } else {
+                            form.prepend(errorDiv);
+                        }
+                        
+                        // Hacer scroll al mensaje de error
+                        errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al guardar los cambios:', error);
+                    const errorDiv = form.querySelector('.alert-danger') || document.createElement('div');
+                    errorDiv.className = 'alert alert-danger';
+                    errorDiv.innerHTML = `
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        Error al guardar los cambios. Por favor, intente nuevamente.
+                        <br><small>${error.message || ''}</small>
+                    `;
+                    
+                    if (form.firstChild) {
+                        form.insertBefore(errorDiv, form.firstChild);
+                    } else {
+                        form.prepend(errorDiv);
+                    }
+                    
+                    errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                })
+                .finally(() => {
+                    // Restaurar el botón de envío
+                    if (submitButton) {
+                        submitButton.disabled = false;
+                        submitButton.innerHTML = originalButtonText;
+                    }
+                });
+            }
+        });
+
         // Manejar el clic en los ítems de la lista
         document.querySelectorAll('.tecnico-item').forEach(item => {
             item.addEventListener('click', function(event) {

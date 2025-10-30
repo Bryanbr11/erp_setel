@@ -2,31 +2,602 @@
 <div class="d-flex align-items-start mb-4">
     <div class="flex-shrink-0 me-4">
         {% if tecnico.foto %}
-            <img src="{{ tecnico.foto.url }}" class="rounded-circle" width="80" height="80" alt="{{ tecnico.get_full_name }}">
+            <img src="{{ tecnico.foto.url }}" class="rounded-circle tecnico-foto" width="80" height="80" alt="{{ tecnico.get_full_name }}">
         {% else %}
             <img src="https://ui-avatars.com/api/?name={{ tecnico.first_name|urlencode }}+{{ tecnico.last_name|urlencode }}&background=2563eb&color=fff" 
-                 class="rounded-circle" width="80" height="80" alt="{{ tecnico.get_full_name }}">
+                 class="rounded-circle tecnico-foto" width="80" height="80" alt="{{ tecnico.get_full_name }}">
         {% endif %}
     </div>
     <div class="flex-grow-1">
-        <h4 class="mb-1">{{ tecnico.get_full_name }}</h4>
-        <p class="text-muted mb-2">{{ tecnico.cargo|default:"Técnico" }}</p>
+        <h4 class="mb-1" data-field="nombre-completo">{{ tecnico.get_full_name|title }}</h4>
+        <p class="text-muted mb-2">{{ tecnico.get_full_name|default:tecnico.usuario.get_full_name|title }}</p>
         <div class="d-flex gap-2">
-            <span class="badge bg-{% if tecnico.estado == 'activo' %}success{% elif tecnico.estado == 'vacaciones' %}warning{% else %}secondary{% endif %} bg-opacity-10 text-{% if tecnico.estado == 'activo' %}success{% elif tecnico.estado == 'vacaciones' %}warning{% else %}secondary{% endif %}">
+            <span class="badge estado-badge {% if tecnico.estado == 'activo' %}bg-success{% elif tecnico.estado == 'vacaciones' %}bg-warning{% else %}bg-secondary{% endif %} text-white">
                 {{ tecnico.get_estado_display|default:"Inactivo" }}
             </span>
             {% if tecnico.departamento %}
-            <span class="badge bg-light text-dark">{{ tecnico.departamento }}</span>
+            <span class="badge bg-light text-dark" data-field="departamento">{{ tecnico.departamento }}</span>
             {% endif %}
         </div>
     </div>
     <div class="d-flex gap-2">
-        <a href="{% url 'tecnicos:edit' tecnico.pk %}" class="btn btn-outline-primary btn-sm" data-bs-toggle="tooltip" title="Editar técnico">
+        <button id="btnEditarTecnico" class="btn btn-outline-primary btn-sm" data-bs-toggle="tooltip" title="Editar técnico" 
+                onclick="window.abrirModalEdicion('{{ tecnico.id }}')">
             <i class="bi bi-pencil"></i> Editar
-        </a>
-        <a href="{% url 'tecnicos:vacaciones_create' tecnico.pk %}" class="btn btn-outline-success btn-sm" data-bs-toggle="tooltip" title="Solicitar vacaciones">
-            <i class="bi bi-calendar-plus"></i> Vacaciones
-        </a>
+        </button>
+    </div>
+    
+    <script>
+    // Función para actualizar el elemento en la lista de colaboradores
+    window.actualizarItemListaTecnico = function(tecnicoData) {
+        const itemSelector = `.tecnico-item[data-tecnico-id="${tecnicoData.tecnico_id}"]`;
+        const item = document.querySelector(itemSelector);
+        
+        if (!item) return;
+        
+        // Actualizar la foto
+        const fotoElement = item.querySelector('img');
+        if (fotoElement && tecnicoData.foto_url) {
+            fotoElement.src = tecnicoData.foto_url;
+            fotoElement.alt = tecnicoData.nombre_completo;
+        } else if (!tecnicoData.foto_url) {
+            // Si no hay foto, usar las iniciales
+            const nombreIniciales = (tecnicoData.first_name ? tecnicoData.first_name[0] : '') + 
+                                 (tecnicoData.last_name ? tecnicoData.last_name[0] : '');
+            fotoElement.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(nombreIniciales)}&background=2563eb&color=fff`;
+        }
+        
+        // Actualizar nombre
+        const nombreElement = item.querySelector('h6');
+        if (nombreElement) {
+            nombreElement.textContent = tecnicoData.nombre_completo.toLowerCase();
+        }
+        
+        // Actualizar departamento
+        const deptoElement = item.querySelector('small.text-muted');
+        if (deptoElement && tecnicoData.departamento_display) {
+            deptoElement.textContent = tecnicoData.departamento_display.toLowerCase();
+        }
+        
+        // Actualizar estado
+        const estadoBadge = item.querySelector('.badge');
+        if (estadoBadge && tecnicoData.estado) {
+            const estadoClases = {
+                'activo': 'bg-success bg-opacity-10 text-success',
+                'inactivo': 'bg-secondary bg-opacity-10 text-secondary',
+                'vacaciones': 'bg-warning bg-opacity-10 text-warning',
+                'licencia': 'bg-info bg-opacity-10 text-info',
+                'prueba': 'bg-primary bg-opacity-10 text-primary'
+            };
+            
+            const estadoClase = estadoClases[tecnicoData.estado] || 'bg-secondary bg-opacity-10 text-secondary';
+            estadoBadge.className = `badge ${estadoClase} text-uppercase`;
+            estadoBadge.style.cssText = 'font-size: 0.65rem; padding: 0.2rem 0.4rem;';
+            estadoBadge.textContent = tecnicoData.estado_display || tecnicoData.estado;
+        }
+        
+        // Actualizar el indicador de estado (punto verde/rojo)
+        const estadoIndicator = item.querySelector('.position-absolute');
+        if (estadoIndicator) {
+            const estadoColor = tecnicoData.estado === 'activo' ? 'bg-success' : 'bg-secondary';
+            estadoIndicator.className = `position-absolute bottom-0 end-0 ${estadoColor} rounded-circle p-1 border border-2 border-white`;
+        }
+        
+        console.log('Elemento de lista actualizado:', item);
+    };
+    
+    // Función para actualizar la interfaz con los nuevos datos del técnico
+    window.actualizarInterfazTecnico = function(tecnicoData) {
+        console.log('=== INICIO actualizarInterfazTecnico ===');
+        console.log('Datos recibidos:', tecnicoData);
+        
+        // Función auxiliar para actualizar elementos del DOM
+        function actualizarElemento(selector, valor, atributo = 'textContent', esLink = false, prefijoLink = '') {
+            const elementos = document.querySelectorAll(selector);
+            if (elementos.length === 0) {
+                console.warn(`No se encontraron elementos con el selector: ${selector}`);
+                return;
+            }
+            
+            const valorMostrado = valor !== undefined && valor !== null ? valor : 'No especificado';
+            
+            elementos.forEach(elemento => {
+                if (esLink) {
+                    if (prefijoLink) {
+                        elemento.href = prefijoLink + (valor || '').replace(/\D/g, '');
+                    }
+                    if (elemento.tagName === 'A') {
+                        elemento.textContent = valorMostrado;
+                    } else {
+                        // Si es un enlace dentro de un párrafo
+                        const enlace = elemento.querySelector('a');
+                        if (enlace) {
+                            enlace.textContent = valorMostrado;
+                            if (prefijoLink && valor) {
+                                enlace.href = prefijoLink + valor.replace(/\D/g, '');
+                            }
+                        } else {
+                            elemento[atributo] = valorMostrado;
+                        }
+                    }
+                } else if (atributo === 'src' && elemento.tagName === 'IMG') {
+                    elemento.alt = valorMostrado;
+                    if (valor) {
+                        elemento.src = valor;
+                    }
+                } else {
+                    elemento[atributo] = valorMostrado;
+                }
+                console.log(`Actualizado ${selector} con valor:`, valorMostrado);
+            });
+        }
+        
+        // Actualizar foto de perfil
+        if (tecnicoData.foto_url) {
+            const fotoElement = document.querySelector('.tecnico-foto');
+            if (fotoElement) {
+                fotoElement.src = tecnicoData.foto_url;
+                fotoElement.alt = tecnicoData.nombre_completo || 'Foto de perfil';
+            }
+        } else if (tecnicoData.first_name || tecnicoData.last_name) {
+            // Actualizar foto con iniciales si no hay URL de foto
+            const nombreIniciales = (tecnicoData.first_name ? tecnicoData.first_name[0] : '') + 
+                                 (tecnicoData.last_name ? tecnicoData.last_name[0] : '');
+            const fotoElement = document.querySelector('.tecnico-foto');
+            if (fotoElement) {
+                fotoElement.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(nombreIniciales)}&background=2563eb&color=fff`;
+            }
+        }
+        
+        // Actualizar nombre en el encabezado
+        if (tecnicoData.first_name || tecnicoData.last_name) {
+            const nombreCompleto = [tecnicoData.first_name, tecnicoData.last_name].filter(Boolean).join(' ');
+            actualizarElemento('[data-field="nombre-completo"]', nombreCompleto);
+            
+            // Actualizar título de la pestaña
+            const tituloBase = document.title.split(' - ')[0];
+            document.title = `${tituloBase} - ${nombreCompleto} - Técnico`;
+            console.log('Título actualizado:', document.title);
+        }
+        
+        // Actualizar campos de información personal
+        const campos = [
+            { 
+                key: 'email', 
+                selector: '.card-body [data-field="email"]', 
+                link: 'mailto:' 
+            },
+            { 
+                key: 'codigo_empleado', 
+                selector: '.card-body [data-field="codigo_empleado"]' 
+            },
+            { 
+                key: 'telefono', 
+                selector: '.card-body [data-field="telefono"]', 
+                link: 'tel:' 
+            },
+            { 
+                key: 'telefono_emergencia', 
+                selector: '.card-body [data-field="telefono_emergencia"]', 
+                link: 'tel:' 
+            },
+            { 
+                key: 'rut', 
+                selector: '.card-body [data-field="rut"]' 
+            },
+            { 
+                key: 'fecha_nacimiento', 
+                selector: '.card-body [data-field="fecha_nacimiento"]',
+                formatter: (value) => value ? new Date(value).toLocaleDateString('es-CL') : 'No especificada'
+            },
+            { 
+                key: 'direccion', 
+                selector: '.card-body [data-field="direccion"]',
+                formatter: (value) => value || 'No especificada'
+            },
+            { 
+                key: 'departamento', 
+                selector: '.card-body [data-field="departamento"]',
+                formatter: (value) => value || 'No especificado'
+            },
+            { 
+                key: 'estado', 
+                selector: '.card-body [data-field="estado"]',
+                formatter: (value) => {
+                    if (value === true || value === 'true' || value === 'activo') {
+                        return 'Activo';
+                    } else if (value === false || value === 'false' || value === 'inactivo') {
+                        return 'Inactivo';
+                    }
+                    return value || 'No especificado';
+                }
+            },
+            // Campos de usuario
+            { 
+                key: 'first_name', 
+                selector: '.card-body [data-field="first_name"]',
+                formatter: (value) => value || 'No especificado'
+            },
+            { 
+                key: 'last_name', 
+                selector: '.card-body [data-field="last_name"]',
+                formatter: (value) => value || 'No especificado'
+            },
+            { 
+                key: 'username', 
+                selector: '.card-body [data-field="username"]',
+                formatter: (value) => value || 'No especificado'
+            }
+        ];
+        
+        // Actualizar cada campo
+        campos.forEach(campo => {
+            let valor;
+            
+            // Buscar el valor en los datos del técnico o en el objeto de usuario anidado
+            if (tecnicoData.usuario && (campo.key in tecnicoData.usuario)) {
+                valor = tecnicoData.usuario[campo.key];
+            } else if (campo.key in tecnicoData) {
+                valor = tecnicoData[campo.key];
+            } else {
+                console.log(`Campo no encontrado en los datos: ${campo.key}`);
+                valor = undefined;
+            }
+            
+            console.log(`Procesando campo ${campo.key}:`, valor);
+            
+            const valorFormateado = campo.formatter ? campo.formatter(valor) : valor;
+            
+            if (campo.link) {
+                actualizarElemento(campo.selector, valorFormateado, 'textContent', true, campo.link);
+            } else {
+                actualizarElemento(campo.selector, valorFormateado);
+            }
+        });
+        
+        // Función para capitalizar nombres propios
+        const capitalizarNombre = (nombre) => {
+            if (!nombre) return '';
+            return nombre.toLowerCase().split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+        };
+
+        // Actualizar campos compuestos como nombre completo
+        if (tecnicoData.first_name || tecnicoData.last_name || 
+            (tecnicoData.usuario && (tecnicoData.usuario.first_name || tecnicoData.usuario.last_name))) {
+            let nombre = tecnicoData.first_name || (tecnicoData.usuario ? tecnicoData.usuario.first_name : '');
+            let apellido = tecnicoData.last_name || (tecnicoData.usuario ? tecnicoData.usuario.last_name : '');
+            
+            // Aplicar capitalización a cada parte del nombre
+            nombre = capitalizarNombre(nombre);
+            apellido = capitalizarNombre(apellido);
+            
+            const nombreCompleto = [nombre, apellido].filter(Boolean).join(' ');
+            
+            if (nombreCompleto) {
+                actualizarElemento('[data-field="nombre-completo"]', nombreCompleto);
+                
+                // Actualizar título de la pestaña
+                const tituloBase = document.title.split(' - ')[0];
+                document.title = `${tituloBase} - ${nombreCompleto} - Técnico`;
+                console.log('Título actualizado:', document.title);
+            }
+        }
+        
+        console.log('=== FIN actualizarInterfazTecnico ===');
+    };
+
+// Función para manejar el envío del formulario de edición
+window.manejarEnvioFormulario = async function(event) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const formData = new FormData(form);
+    const tecnicoId = form.dataset.tecnicoId;
+    const url = `/tecnicos/editar/${tecnicoId}/`;
+    
+    // Mostrar indicador de carga
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+    
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            console.log('Respuesta exitosa del servidor:', data);
+            
+            // Asegurarse de que los datos necesarios estén presentes
+            if (!data.nombre_completo && (data.first_name || data.last_name)) {
+                data.nombre_completo = `${data.first_name || ''} ${data.last_name || ''}`.trim();
+            }
+            
+            // Asegurarse de que el ID del técnico esté presente
+            if (!data.tecnico_id && form.dataset.tecnicoId) {
+                data.tecnico_id = form.dataset.tecnicoId;
+            }
+            
+            console.log('Datos procesados para actualización:', data);
+            
+            // Cerrar el modal de edición
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editarTecnicoModal'));
+            if (modal) {
+                modal.hide();
+            }
+            
+            // Función para actualizar campos en la interfaz
+            const actualizarCampo = (selector, valor, esFecha = false) => {
+                const elementos = document.querySelectorAll(selector);
+                if (elementos.length === 0) {
+                    console.warn(`No se encontró el elemento con selector: ${selector}`);
+                    return;
+                }
+                
+                const valorMostrar = valor ? (esFecha ? new Date(valor).toLocaleDateString('es-CL') : valor) : 'No especificado';
+                
+                elementos.forEach(elemento => {
+                    if (elemento.tagName === 'A') {
+                        // Para enlaces, actualizar tanto el href como el texto
+                        const tipo = selector.includes('email') ? 'mailto:' : 'tel:';
+                        elemento.href = tipo + (valor || '').replace(/\D/g, '');
+                        elemento.textContent = valorMostrar;
+                    } else {
+                        // Para elementos normales, actualizar solo el texto
+                        elemento.textContent = valorMostrar;
+                    }
+                    console.log(`Actualizado ${selector} con valor:`, valorMostrar);
+                });
+            };
+
+            try {
+                // Actualizar campos de información personal
+                if (data.codigo_empleado) actualizarCampo('[data-field="codigo_empleado"]', data.codigo_empleado);
+                if (data.rut) actualizarCampo('[data-field="rut"]', data.rut);
+                if (data.fecha_nacimiento) actualizarCampo('[data-field="fecha_nacimiento"]', data.fecha_nacimiento, true);
+                if (data.email) actualizarCampo('[data-field="email"]', data.email);
+                if (data.telefono) actualizarCampo('[data-field="telefono"]', data.telefono);
+                if (data.telefono_emergencia) actualizarCampo('[data-field="telefono_emergencia"]', data.telefono_emergencia);
+                if (data.direccion) actualizarCampo('[data-field="direccion"]', data.direccion);
+                
+                // Actualizar información laboral
+                if (data.puesto) actualizarCampo('.card-body:has(.small:contains("Puesto")) p:not(.small)', data.puesto);
+                if (data.departamento) actualizarCampo('.card-body:has(.small:contains("Departamento")) p:not(.small)', data.departamento);
+                if (data.ubicacion) actualizarCampo('.card-body:has(.small:contains("Ubicación")) p:not(.small)', data.ubicacion);
+                if (data.fecha_ingreso) actualizarCampo('.card-body:has(.small:contains("Fecha de Ingreso")) p:not(.small)', data.fecha_ingreso, true);
+
+                // Actualizar el ítem en la lista de colaboradores si la función existe
+                if (window.actualizarItemListaTecnico) {
+                    window.actualizarItemListaTecnico(data);
+                    console.log('Lista de colaboradores actualizada');
+                }
+
+                // Cerrar el modal de edición
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editarTecnicoModal'));
+                if (modal) {
+                    modal.hide();
+                }
+
+                // Mostrar mensaje de éxito
+                const successAlert = `
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="bi bi-check-circle me-2"></i> Los cambios se han guardado correctamente.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>`;
+                
+                // Insertar el mensaje al principio del contenedor principal
+                const mainContainer = document.querySelector('.container-fluid');
+                if (mainContainer) {
+                    // Eliminar alertas anteriores
+                    const alertasAnteriores = mainContainer.querySelectorAll('.alert');
+                    alertasAnteriores.forEach(alerta => alerta.remove());
+                    
+                    // Agregar nueva alerta
+                    mainContainer.insertAdjacentHTML('afterbegin', successAlert);
+                    
+                    // Eliminar el mensaje después de 3 segundos
+                    setTimeout(() => {
+                        const alert = mainContainer.querySelector('.alert');
+                        if (alert) {
+                            alert.remove();
+                        }
+                    }, 3000);
+                }
+
+            } catch (error) {
+                console.error('Error al actualizar la interfaz:', error);
+                // En caso de error, recargar la página para asegurar que todo esté actualizado
+                window.location.reload();
+            }
+            }
+            
+            // Mostrar mensaje de éxito
+            const toastEl = document.getElementById('toastSuccess');
+            if (toastEl) {
+                const toast = new bootstrap.Toast(toastEl);
+                const toastMessage = document.getElementById('toastSuccessMessage');
+                if (toastMessage) {
+                    toastMessage.textContent = data.message || 'Los cambios se han guardado correctamente.';
+                }
+                toast.show();
+            }
+            
+            // Cerrar el modal después de un breve retraso
+            setTimeout(() => {
+                const modalElement = document.getElementById('editarTecnicoModal');
+                if (modalElement) {
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    if (modal) {
+                        modal.hide();
+                    }
+                }
+            }, 1000);
+            
+            // Limpiar el formulario y el modal
+            const modalElement = document.getElementById('editarTecnicoModal');
+            if (modalElement) {
+                modalElement.addEventListener('hidden.bs.modal', function() {
+                    const form = modalElement.querySelector('form');
+                    if (form) form.reset();
+                }, { once: true });
+            }
+        })
+        .catch(error => {
+            console.error('Error al enviar el formulario:', error);
+            
+            // Mostrar mensaje de error
+            const errorDiv = form.querySelector('.alert-danger') || document.createElement('div');
+            errorDiv.className = 'alert alert-danger';
+            errorDiv.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <div>
+                        <strong>Error al guardar los cambios.</strong>
+                        <div class="small">${error.message || 'Por favor, intente nuevamente.'}</div>
+                    </div>
+                </div>
+            `;
+            
+            if (form.firstChild) {
+                form.insertBefore(errorDiv, form.firstChild);
+            } else {
+                form.prepend(errorDiv);
+            }
+            
+            errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        })
+        .finally(() => {
+            // Restaurar el botón de envío
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalButtonText;
+        });
+    };
+    
+    // Asegurarse de que la función esté disponible globalmente
+    window.abrirModalEdicion = function(tecnicoId) {
+        console.log('Abriendo modal para técnico ID:', tecnicoId);
+        const modalElement = document.getElementById('editarTecnicoModal');
+        const modal = new bootstrap.Modal(modalElement, {
+            backdrop: 'static',
+            keyboard: false
+        });
+        const modalBody = document.getElementById('editarTecnicoModalBody');
+        
+        // Mostrar spinner de carga
+        modalBody.innerHTML = `
+            <div class="d-flex justify-content-center my-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+            </div>
+        `;
+        
+        // Mostrar el modal
+        modal.show();
+        
+        // Cargar el formulario vía AJAX
+        fetch(`/tecnicos/${tecnicoId}/editar/`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Error HTTP: ${response.status}`);
+            }
+            return response.text();
+        })
+        .then(html => {
+            // Crear un elemento temporal para manipular el HTML
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            
+            // Insertar el formulario en el modal
+            modalBody.innerHTML = tempDiv.querySelector('#editarTecnicoForm') ? 
+                tempDiv.querySelector('#editarTecnicoForm').outerHTML : 
+                html;
+            
+            // Asegurarse de que el formulario tenga el ID correcto
+            const form = document.getElementById('editarTecnicoForm');
+            if (!form) {
+                throw new Error('No se encontró el formulario con ID editarTecnicoForm');
+            }
+            
+            // Configurar el atributo data-tecnico-id si no está presente
+            if (!form.dataset.tecnicoId && tecnicoId) {
+                form.dataset.tecnicoId = tecnicoId;
+            }
+            
+            // Inicializar los selectores de fecha
+            if (typeof $.fn.datepicker !== 'undefined') {
+                $('.datepicker').datepicker({
+                    format: 'dd/mm/yyyy',
+                    autoclose: true,
+                    todayHighlight: true,
+                    language: 'es',
+                    orientation: 'bottom auto'
+                });
+            }
+            
+            // Eliminar cualquier manejador de eventos existente para evitar duplicados
+            const newForm = form.cloneNode(true);
+            form.parentNode.replaceChild(newForm, form);
+            
+            // Agregar manejador de envío del formulario
+            newForm.addEventListener('submit', function(event) {
+                window.manejarEnvioFormulario(event);
+            });
+            
+            console.log('Formulario cargado y configurado correctamente');
+        })
+        .catch(error => {
+            console.error('Error al cargar el formulario:', error);
+            modalBody.innerHTML = `
+                <div class="alert alert-danger m-3">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    Error al cargar el formulario: ${error.message || 'Por favor, intente nuevamente.'}
+                </div>
+                <div class="text-center mb-3">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x"></i> Cerrar
+                    </button>
+                </div>
+            `;
+        });
+    };
+    </script>
+    
+    <!-- Incluir el modal de edición -->
+    <div class="modal fade" id="editarTecnicoModal" tabindex="-1" aria-labelledby="editarTecnicoModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="editarTecnicoModalLabel">
+                        <i class="bi bi-pencil-square"></i> Editar Técnico
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div id="editarTecnicoModalBody">
+                    <!-- El contenido se cargará dinámicamente -->
+                    <div class="d-flex justify-content-center my-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -59,50 +630,121 @@
 <div class="tab-content" id="tecnicoTabsContent">
     <!-- Pestaña de Información -->
     <div class="tab-pane fade show active" id="info" role="tabpanel" aria-labelledby="info-tab">
-        <div class="row">
-            <div class="col-md-6">
-                <div class="mb-3">
-                    <p class="mb-1 text-muted small">Código</p>
-                    <p class="mb-3">{{ tecnico.codigo_empleado|default:"No especificado" }}</p>
-                </div>
-                <div class="mb-3">
-                    <p class="mb-1 text-muted small">Email</p>
-                    <p class="mb-3">{{ tecnico.email|default:"No especificado" }}</p>
-                </div>
-                <div class="mb-3">
-                    <p class="mb-1 text-muted small">Teléfono</p>
-                    <p class="mb-3">{{ tecnico.telefono|default:"No especificado" }}</p>
-                </div>
-                <div class="mb-3">
-                    <p class="mb-1 text-muted small">Fecha de Nacimiento</p>
-                    <p class="mb-3">{{ tecnico.fecha_nacimiento|date:"d/m/Y"|default:"No especificada" }}</p>
-                </div>
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">Información Personal</h6>
             </div>
-            <div class="col-md-6">
-                <div class="mb-3">
-                    <p class="mb-1 text-muted small">Fecha de Ingreso</p>
-                    <p class="mb-3">{{ tecnico.fecha_ingreso|date:"d/m/Y"|default:"No especificada" }}</p>
-                </div>
-                <div class="mb-3">
-                    <p class="mb-1 text-muted small">Previsión</p>
-                    <p class="mb-3">{{ tecnico.prevision|default:"No especificada" }}</p>
-                </div>
-                <div class="mb-3">
-                    <p class="mb-1 text-muted small">AFP</p>
-                    <p class="mb-3">{{ tecnico.afp|default:"No especificada" }}</p>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <p class="mb-1 text-muted small">Código de Empleado</p>
+                            <p class="mb-3" data-field="codigo_empleado">{{ tecnico.codigo_empleado|default:"No especificado" }}</p>
+                        </div>
+                        <div class="mb-3">
+                            <p class="mb-1 text-muted small">RUT</p>
+                            <p class="mb-3" data-field="rut">{{ tecnico.rut|default:"No especificado" }}</p>
+                        </div>
+                        <div class="mb-3">
+                            <p class="mb-1 text-muted small">Fecha de Nacimiento</p>
+                            <p class="mb-3" data-field="fecha_nacimiento">{{ tecnico.fecha_nacimiento|date:"d/m/Y"|default:"No especificada" }}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <p class="mb-1 text-muted small">Email</p>
+                            <p class="mb-3" data-field="email">{{ tecnico.usuario.email|default:"No especificado" }}</p>
+                        </div>
+                        <div class="mb-3">
+                            <p class="mb-1 text-muted small">Teléfono</p>
+                            <p class="mb-3" data-field="telefono">{{ tecnico.telefono|default:"No especificado" }}</p>
+                        </div>
+                        <div class="mb-3">
+                            <p class="mb-1 text-muted small">Teléfono de Emergencia</p>
+                            <p class="mb-3" data-field="telefono_emergencia">{{ tecnico.telefono_emergencia|default:"No especificado" }}</p>
+                        </div>
+                    </div>
                 </div>
                 <div class="mb-3">
                     <p class="mb-1 text-muted small">Dirección</p>
-                    <p class="mb-3">{{ tecnico.direccion|default:"No especificada" }}</p>
+                    <p class="mb-0" data-field="direccion">{{ tecnico.direccion|default:"No especificada" }}</p>
                 </div>
             </div>
         </div>
-        
-        {% if tecnico.notas %}
-        <div class="card bg-light mt-3">
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">Información Laboral</h6>
+            </div>
             <div class="card-body">
-                <h6 class="card-title">Notas</h6>
-                <p class="card-text">{{ tecnico.notas|linebreaksbr }}</p>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <p class="mb-1 text-muted small">Puesto</p>
+                            <p class="mb-3">{{ tecnico.puesto|default:"No especificado" }}</p>
+                        </div>
+                        <div class="mb-3">
+                            <p class="mb-1 text-muted small">Departamento</p>
+                            <p class="mb-3">{{ tecnico.get_departamento_display|default:"No especificado" }}</p>
+                        </div>
+                        <div class="mb-3">
+                            <p class="mb-1 text-muted small">Ubicación</p>
+                            <p class="mb-3">{{ tecnico.get_ubicacion_display|default:"No especificada" }}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <p class="mb-1 text-muted small">Fecha de Ingreso</p>
+                            <p class="mb-3">{{ tecnico.fecha_ingreso|date:"d/m/Y"|default:"No especificada" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">Información de Previsión y AFP</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <p class="mb-1 text-muted small">Previsión de Salud</p>
+                            <p class="mb-3">{{ tecnico.get_prevision_display|default:"No especificada" }}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <p class="mb-1 text-muted small">AFP</p>
+                            <p class="mb-3">{{ tecnico.get_afp_display|default:"No especificada" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        
+        {% if tecnico.linkedin %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">Perfil de LinkedIn</h6>
+            </div>
+            <div class="card-body">
+                <a href="{{ tecnico.linkedin }}" target="_blank" class="text-decoration-none">
+                    <i class="bi bi-linkedin me-2"></i>Ver perfil en LinkedIn
+                </a>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if tecnico.observaciones %}
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Observaciones</h6>
+            </div>
+            <div class="card-body">
+                <p class="mb-0">{{ tecnico.observaciones|linebreaksbr }}</p>
             </div>
         </div>
         {% endif %}
@@ -110,34 +752,128 @@
     
     <!-- Pestaña de Documentos -->
     <div class="tab-pane fade" id="documentos" role="tabpanel" aria-labelledby="documentos-tab">
+        <!-- Contenedor para mensajes de alerta -->
+        <div class="alert-container mb-3"></div>
+        
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h6 class="mb-0">Documentos adjuntos</h6>
-            <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#subirDocumentoModal">
-                <i class="bi bi-upload"></i> Subir documento
-            </button>
+            <div>
+                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#subirDocumentoModal">
+                    <i class="bi bi-upload me-1"></i> Subir documento
+                </button>
+            </div>
         </div>
         
-        {% if documentos %}
-            <div class="list-group">
-                {% for documento in documentos %}
-                <div class="list-group-item">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <i class="bi bi-file-earmark-text me-2"></i>
-                            <a href="{{ documento.archivo.url }}" target="_blank">{{ documento.nombre|default:"Documento sin nombre" }}</a>
-                            <small class="text-muted d-block">{{ documento.fecha_subida|date:"d/m/Y H:i" }}</small>
-                        </div>
-                        <div>
-                            <a href="{{ documento.archivo.url }}" class="btn btn-sm btn-outline-primary" download>
-                                <i class="bi bi-download"></i>
-                            </a>
-                            <a href="#" class="btn btn-sm btn-outline-danger" onclick="return confirm('¿Estás seguro de que deseas eliminar este documento?')">
-                                <i class="bi bi-trash"></i>
-                            </a>
-                        </div>
+        <!-- Filtros de documentos -->
+        <form method="get" class="mb-3" id="filtrosDocumentosForm" action="">
+            <div class="row g-2 mb-3">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0">
+                            <i class="bi bi-search text-muted"></i>
+                        </span>
+                        <input type="text" name="search_doc" class="form-control border-start-0" 
+                               placeholder="Buscar documento..." value="{{ search_doc|default:'' }}"
+                               onkeypress="if(event.keyCode === 13) { this.form.submit(); }">
+                        {% if search_doc %}
+                        <a href="?{% if tipo_doc_selected %}tipo_documento={{ tipo_doc_selected }}{% endif %}" class="btn btn-outline-secondary" type="button">
+                            <i class="bi bi-x"></i>
+                        </a>
+                        {% endif %}
                     </div>
                 </div>
-                {% endfor %}
+                <div class="col-md-4">
+                    <select name="tipo_documento" class="form-select form-select-sm" onchange="this.form.submit()">
+                        <option value="">Todos los tipos</option>
+                        {% for tipo in tipos_documento %}
+                        <option value="{{ tipo.0 }}" {% if tipo_doc_selected == tipo.0|stringformat:'s' %}selected{% endif %}>
+                            {{ tipo.1 }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary btn-sm w-100">
+                            <i class="bi bi-funnel"></i> Filtrar
+                        </button>
+                        {% if search_doc or tipo_doc_selected %}
+                        <a href="?" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </form>
+        
+        <!-- Etiqueta del filtro activo -->
+        <div id="filtro-activo" class="mb-3 d-none">
+            <span class="badge bg-primary bg-opacity-10 text-primary d-inline-flex align-items-center">
+                <i class="bi bi-funnel me-1"></i> Filtrado por: <span id="filtro-activo-texto" class="ms-1 fw-medium"></span>
+                <button type="button" class="btn-close btn-close-white ms-2" id="quitar-filtro" style="font-size: 0.5rem;"></button>
+            </span>
+        </div>
+        
+        <!-- Contenedor para mensajes de alerta -->
+        <div class="alert-container mb-3"></div>
+        
+        {% if documentos %}
+            <div class="table-responsive" id="tabla-documentos">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 15%;">Tipo</th>
+                            <th>Documento</th>
+                            <th style="width: 15%;">Fecha</th>
+                            <th style="width: 120px;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for documento in documentos %}
+                        <tr class="documento-fila" data-tipo="{{ documento.tipo }}">
+                            <td>
+                                <span class="badge bg-primary bg-opacity-10 text-dark">
+                                    <i class="bi {% if documento.tipo == 'cv' %}bi-file-earmark-person{% elif documento.tipo == 'contrato' %}bi-file-earmark-text{% else %}bi-file-earmark{% endif %} me-1"></i>
+                                    {{ documento.get_tipo_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-file-earmark-text me-2 text-primary"></i>
+                                    <div>
+                                        <div class="fw-medium">
+                                            <a href="{{ documento.archivo.url }}" target="_blank" class="text-decoration-none text-dark">
+                                                {{ documento.nombre|default:"Documento sin nombre" }}
+                                            </a>
+                                        </div>
+                                        {% if documento.descripcion %}
+                                            <small class="text-muted">{{ documento.descripcion|truncatechars:60 }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <small class="text-muted">{{ documento.fecha_subida|date:"d/m/Y H:i" }}</small>
+                            </td>
+                            <td class="text-nowrap">
+                                <a href="{{ documento.archivo.url }}" class="btn btn-sm btn-outline-primary me-1" data-bs-toggle="tooltip" title="Ver documento" target="_blank">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{{ documento.archivo.url }}" class="btn btn-sm btn-outline-secondary me-1" download data-bs-toggle="tooltip" title="Descargar">
+                                    <i class="bi bi-download"></i>
+                                </a>
+                                <form action="{% url 'tecnicos:documento_delete' documento.id %}" method="post" class="d-inline" onsubmit="return confirm('¿Estás seguro de que deseas eliminar este documento? Esta acción no se puede deshacer.');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" data-bs-toggle="tooltip" title="Eliminar">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                                </table>
             </div>
         {% else %}
             <div class="alert alert-info">
@@ -145,6 +881,52 @@
             </div>
         {% endif %}
     </div>
+    
+    <!-- Script para manejar el filtro activo -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Mostrar el filtro activo si hay parámetros en la URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const searchDoc = urlParams.get('search_doc');
+        const tipoDoc = urlParams.get('tipo_documento');
+        const filtroActivo = document.getElementById('filtro-activo');
+        const filtroActivoTexto = document.getElementById('filtro-activo-texto');
+        const quitarFiltroBtn = document.getElementById('quitar-filtro');
+        
+        function actualizarFiltroActivo() {
+            const filtros = [];
+            
+            if (searchDoc) {
+                filtros.push(`Búsqueda: "${searchDoc}"`);
+            }
+            
+            if (tipoDoc) {
+                const tipoSelect = document.querySelector('select[name="tipo_documento"]');
+                const tipoText = tipoSelect ? 
+                    tipoSelect.options[tipoSelect.selectedIndex].text : 
+                    'Documento';
+                filtros.push(`Tipo: ${tipoText}`);
+            }
+            
+            if (filtros.length > 0) {
+                filtroActivoTexto.textContent = filtros.join(' | ');
+                filtroActivo.classList.remove('d-none');
+            } else {
+                filtroActivo.classList.add('d-none');
+            }
+        }
+        
+        // Inicializar el filtro activo
+        actualizarFiltroActivo();
+        
+        // Manejar el botón para quitar filtros
+        if (quitarFiltroBtn) {
+            quitarFiltroBtn.addEventListener('click', function() {
+                window.location.href = window.location.pathname;
+            });
+        }
+    });
+    </script>
     
     <!-- Pestaña de Vacaciones -->
     <div class="tab-pane fade" id="vacaciones" role="tabpanel" aria-labelledby="vacaciones-tab">
@@ -194,31 +976,90 @@
     </div>
 </div>
 
-<!-- Modal para subir documento -->
-<div class="modal fade" id="subirDocumentoModal" tabindex="-1" aria-labelledby="subirDocumentoModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="subirDocumentoModalLabel">Subir documento</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form method="post" action="{% url 'tecnicos:documento_upload' tecnico.pk %}" enctype="multipart/form-data">
-                {% csrf_token %}
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="documentoNombre" class="form-label">Nombre del documento</label>
-                        <input type="text" class="form-control" id="documentoNombre" name="nombre" required>
+<!-- Script para el filtrado de documentos -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const filtroActivo = document.getElementById('filtro-activo');
+    const filtroActivoTexto = document.getElementById('filtro-activo-texto');
+    const quitarFiltroBtn = document.getElementById('quitar-filtro');
+    const filasDocumentos = document.querySelectorAll('.documento-fila');
+    
+    // Manejar clic en los filtros
+    document.querySelectorAll('.filter-doc').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            const tipo = this.getAttribute('data-tipo');
+            const tipoTexto = this.textContent.trim();
+            
+            // Actualizar la interfaz
+            if (tipo) {
+                filtroActivoTexto.textContent = tipoTexto;
+                filtroActivo.classList.remove('d-none');
+                
+                // Filtrar filas
+                filasDocumentos.forEach(fila => {
+                    if (fila.getAttribute('data-tipo') === tipo) {
+                        fila.style.display = '';
+                    } else {
+                        fila.style.display = 'none';
+                    }
+                });
+                
+                // Mostrar mensaje si no hay resultados
+                const filasVisibles = document.querySelectorAll('.documento-fila:not([style*="display: none"])');
+                if (filasVisibles.length === 0) {
+                    mostrarMensajeSinResultados();
+                } else if (document.querySelector('.sin-resultados')) {
+                    document.querySelector('.sin-resultados').remove();
+                }
+            } else {
+                // Mostrar todos los documentos
+                mostrarTodosLosDocumentos();
+            }
+        });
+    });
+    
+    // Manejar clic en el botón de quitar filtro
+    quitarFiltroBtn.addEventListener('click', function() {
+        mostrarTodosLosDocumentos();
+    });
+    
+    // Función para mostrar todos los documentos
+    function mostrarTodosLosDocumentos() {
+        filasDocumentos.forEach(fila => {
+            fila.style.display = '';
+        });
+        filtroActivo.classList.add('d-none');
+        
+        // Eliminar mensaje de sin resultados si existe
+        const mensajeSinResultados = document.querySelector('.sin-resultados');
+        if (mensajeSinResultados) {
+            mensajeSinResultados.remove();
+        }
+    }
+    
+    // Función para mostrar mensaje cuando no hay resultados
+    function mostrarMensajeSinResultados() {
+        // Verificar si ya existe un mensaje
+        if (!document.querySelector('.sin-resultados')) {
+            const tabla = document.querySelector('#tabla-documentos table tbody');
+            const mensaje = document.createElement('tr');
+            mensaje.className = 'sin-resultados';
+            mensaje.innerHTML = `
+                <td colspan="4" class="text-center py-4">
+                    <div class="text-muted">
+                        <i class="bi bi-search display-6 d-block mb-2"></i>
+                        <p class="mb-0">No se encontraron documentos que coincidan con el filtro seleccionado</p>
+                        <button class="btn btn-sm btn-link p-0 mt-2" onclick="document.querySelector('.filter-doc[data-tipo=\'\']').click()">
+                            Mostrar todos los documentos
+                        </button>
                     </div>
-                    <div class="mb-3">
-                        <label for="documentoArchivo" class="form-label">Archivo</label>
-                        <input class="form-control" type="file" id="documentoArchivo" name="archivo" required>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Subir</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+                </td>`;
+            tabla.appendChild(mensaje);
+        }
+    }
+});
+</script>
+
+<!-- Incluir el modal de subir documento -->
+{% include 'tecnicos/partials/documento_upload.html' %}

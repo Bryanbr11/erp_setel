@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ tecnico.nombre_completo }} - Técnicos{% endblock %}
+{% block title %}{{ tecnico.nombre_completo }} - Colaboradores{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -9,7 +9,7 @@
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
-                    <li class="breadcrumb-item"><a href="{% url 'tecnicos:list' %}">Técnicos</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'tecnicos:list' %}">Colaboradores</a></li>
                     <li class="breadcrumb-item active">{{ tecnico.codigo_empleado }}</li>
                 </ol>
             </nav>
@@ -35,10 +35,13 @@
                         {{ tecnico.get_estado_display }}
                     </span>
                     <div class="mt-3">
-                        <a href="{% url 'tecnicos:edit' tecnico.pk %}" class="btn btn-sm btn-primary">
+                        <button onclick="abrirModalEdicion('{{ tecnico.id }}'); return false;" class="btn btn-sm btn-primary">
                             <i class="bi bi-pencil"></i> Editar
-                        </a>
+                        </button>
                     </div>
+                    
+                    <!-- Incluir el modal de edición -->
+                    {% include 'tecnicos/partials/editar_tecnico_modal.html' %}
                 </div>
             </div>
         </div>
@@ -94,22 +97,6 @@
                                             <td><strong>Estado:</strong></td>
                                             <td>{{ tecnico.get_estado_display }}</td>
                                         </tr>
-                                        <tr>
-                                            <td><strong>Especialidades:</strong></td>
-                                            <td>
-                                                {% for especialidad in tecnico.especialidades.all %}
-                                                    <span class="badge bg-info me-1">{{ especialidad.nombre }}</span>
-                                                {% empty %}
-                                                    Sin especialidades
-                                                {% endfor %}
-                                            </td>
-                                        </tr>
-                                        {% if tecnico.salario_base %}
-                                        <tr>
-                                            <td><strong>Salario Base:</strong></td>
-                                            <td>${{ tecnico.salario_base|floatformat:0 }}</td>
-                                        </tr>
-                                        {% endif %}
                                     </table>
                                 </div>
                             </div>
@@ -127,20 +114,56 @@
                                 </a>
                             </div>
                             {% if documentos %}
-                                <div class="list-group">
-                                    {% for documento in tecnico.documentos.all %}
-                                    <div class="list-group-item">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <h6 class="mb-1">{{ documento.nombre }}</h6>
-                                                <small class="text-muted">{{ documento.get_tipo_display }} - {{ documento.fecha_subida }}</small>
-                                            </div>
-                                            <a href="{{ documento.archivo.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
-                                                <i class="bi bi-download"></i> Descargar
-                                            </a>
-                                        </div>
-                                    </div>
-                                    {% endfor %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Tipo</th>
+                                                <th>Documento</th>
+                                                <th>Fecha</th>
+                                                <th>Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for documento in tecnico.documentos.all %}
+                                            <tr>
+                                                <td>
+                                                    <span class="badge bg-primary bg-opacity-10 text-primary">
+                                                        {{ documento.get_tipo_display }}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div class="d-flex align-items-center">
+                                                        <i class="bi bi-file-earmark-text me-2 text-primary"></i>
+                                                        <div>
+                                                            <div class="fw-medium">{{ documento.nombre }}</div>
+                                                            {% if documento.descripcion %}
+                                                                <small class="text-muted">{{ documento.descripcion|truncatechars:60 }}</small>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <small class="text-muted">{{ documento.fecha_subida|date:"d/m/Y H:i" }}</small>
+                                                </td>
+                                                <td class="text-nowrap">
+                                                    <a href="{{ documento.archivo.url }}" class="btn btn-sm btn-outline-primary me-1" data-bs-toggle="tooltip" title="Ver documento" target="_blank">
+                                                        <i class="bi bi-eye"></i>
+                                                    </a>
+                                                    <a href="{{ documento.archivo.url }}" class="btn btn-sm btn-outline-secondary me-1" download data-bs-toggle="tooltip" title="Descargar">
+                                                        <i class="bi bi-download"></i>
+                                                    </a>
+                                                    <form action="{% url 'tecnicos:documento_delete' documento.pk %}" method="post" class="d-inline" onsubmit="return confirm('¿Estás seguro de que deseas eliminar este documento?');">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger" data-bs-toggle="tooltip" title="Eliminar">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
                                 </div>
                             {% else %}
                                 <p class="text-muted">No hay documentos cargados</p>

@@ -13,6 +13,184 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <!-- Chart.js for reports -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Script para el modal de edición -->
+    <script>
+    // Función global para abrir el modal de edición
+    window.abrirModalEdicion = function(tecnicoId) {
+        const modal = new bootstrap.Modal(document.getElementById('editarTecnicoModal'));
+        const modalBody = document.getElementById('editarTecnicoModalBody');
+        
+        // Mostrar spinner de carga
+        modalBody.innerHTML = `
+            <div class="d-flex justify-content-center my-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+            </div>`;
+        
+        // Cargar el formulario de edición
+        fetch(`/tecnicos/${tecnicoId}/editar/`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.text())
+        .then(html => {
+            modalBody.innerHTML = html;
+            // Inicializar los selectores de fecha
+            const dateInputs = modalBody.querySelectorAll('input[type="date"]');
+            dateInputs.forEach(input => {
+                if (input.value) {
+                    const date = new Date(input.value);
+                    input.value = date.toISOString().split('T')[0];
+                }
+            });
+            // Inicializar tooltips
+            const tooltipTriggerList = [].slice.call(modalBody.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+            // Mostrar el modal
+            modal.show();
+        })
+        .catch(error => {
+            console.error('Error al cargar el formulario de edición:', error);
+            modalBody.innerHTML = `
+                <div class="alert alert-danger m-3">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    Error al cargar el formulario de edición. Por favor, intente nuevamente.
+                </div>`;
+        });
+    };
+
+    // Manejador del formulario de edición
+    document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('submit', function(event) {
+            const form = event.target;
+            if (form.id === 'editarTecnicoForm') {
+                event.preventDefault();
+                
+                // Mostrar indicador de carga
+                const submitButton = form.querySelector('button[type="submit"]');
+                const originalButtonText = submitButton.innerHTML;
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Guardando...';
+                
+                const formData = new FormData(form);
+                
+                fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Actualizar la información en la página sin recargar
+                        if (data.nombre_completo) {
+                            // Actualizar el título de la página si es necesario
+                            const pageTitle = document.querySelector('h1');
+                            if (pageTitle) {
+                                pageTitle.textContent = data.nombre_completo;
+                            }
+                            
+                            // Actualizar la información en la tarjeta del técnico
+                            const infoElements = {
+                                'nombre-completo': data.nombre_completo,
+                                'email': data.email || '',
+                                'telefono': data.telefono || 'No especificado',
+                                'departamento': data.departamento_display || 'No especificado',
+                                'estado': data.estado_display || 'No especificado'
+                            };
+                            
+                            // Actualizar cada elemento de información
+                            Object.entries(infoElements).forEach(([key, value]) => {
+                                const element = document.querySelector(`[data-field="${key}"]`);
+                                if (element) {
+                                    element.textContent = value;
+                                    
+                                    // Si es el estado, actualizar también la clase del badge
+                                    if (key === 'estado') {
+                                        const estadoBadge = document.querySelector('.estado-badge');
+                                        if (estadoBadge) {
+                                            // Eliminar clases de estado anteriores
+                                            estadoBadge.className = 'badge ' + 
+                                                (data.estado === 'activo' ? 'bg-success' : 
+                                                 data.estado === 'inactivo' ? 'bg-secondary' :
+                                                 data.estado === 'vacaciones' ? 'bg-warning' :
+                                                 data.estado === 'licencia' ? 'bg-info' : 'bg-secondary') + 
+                                                ' text-white';
+                                            estadoBadge.textContent = value;
+                                        }
+                                    }
+                                }
+                            });
+                            
+                            // Actualizar la foto si se cambió
+                            if (data.foto_url) {
+                                const fotoElement = document.querySelector('.tecnico-foto');
+                                if (fotoElement) {
+                                    fotoElement.src = data.foto_url;
+                                }
+                            }
+                        }
+                        
+                        // Mostrar mensaje de éxito
+                        const toast = new bootstrap.Toast(document.getElementById('toastSuccess'));
+                        const toastMessage = document.getElementById('toastSuccessMessage');
+                        toastMessage.textContent = data.message || 'Los cambios se han guardado correctamente.';
+                        toast.show();
+                    } else {
+                        // Mostrar errores del formulario
+                        const errorDiv = form.querySelector('.alert-danger') || document.createElement('div');
+                        errorDiv.className = 'alert alert-danger';
+                        errorDiv.innerHTML = `
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            ${data.message || 'Por favor, corrija los errores a continuación.'}
+                            ${data.errors ? '<br><small>' + Object.values(data.errors).flat().join('<br>') + '</small>' : ''}
+                        `;
+                        
+                        // Insertar el mensaje de error después del primer elemento del formulario
+                        if (form.firstChild) {
+                            form.insertBefore(errorDiv, form.firstChild);
+                        } else {
+                            form.prepend(errorDiv);
+                        }
+                        
+                        // Hacer scroll al mensaje de error
+                        errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al guardar los cambios:', error);
+                    const errorDiv = form.querySelector('.alert-danger') || document.createElement('div');
+                    errorDiv.className = 'alert alert-danger';
+                    errorDiv.innerHTML = `
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        Error al guardar los cambios. Por favor, intente nuevamente.
+                        <br><small>${error.message || ''}</small>
+                    `;
+                    
+                    if (form.firstChild) {
+                        form.insertBefore(errorDiv, form.firstChild);
+                    } else {
+                        form.prepend(errorDiv);
+                    }
+                    
+                    errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                })
+                .finally(() => {
+                    // Restaurar el botón de envío
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = originalButtonText;
+                });
+            }
+        });
+    });
+    </script>
 
     <style>
         /* Estilos básicos mejorados */
@@ -105,7 +283,7 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'tecnicos:list' %}">
-                            <i class="bi bi-people"></i> Técnicos
+                            <i class="bi bi-people me-2"></i> Colaboradores
                         </a>
                     </li>
                     <li class="nav-item">
@@ -152,13 +330,29 @@
 
     <!-- Main Content -->
     <main class="{% if user.is_authenticated %}container-fluid mt-4{% else %}container{% endif %}">
+        <!-- Mensajes del sistema -->
         {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            {% endfor %}
+            <div class="container mt-3">
+                {% for message in messages %}
+                    {% if 'safe' in message.tags %}
+                        {{ message|safe }}
+                    {% else %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {% if 'success' in message.tags %}
+                                <i class="bi bi-check-circle-fill me-2"></i>
+                            {% elif 'error' in message.tags or 'danger' in message.tags %}
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            {% elif 'warning' in message.tags %}
+                                <i class="bi bi-exclamation-circle-fill me-2"></i>
+                            {% elif 'info' in message.tags %}
+                                <i class="bi bi-info-circle-fill me-2"></i>
+                            {% endif %}
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
         {% endif %}
 
         {% block content %}{% endblock %}
@@ -174,8 +368,114 @@
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
+    <!-- Scripts de la aplicación -->
+    <script src="{% static 'js/app.js' %}"></script>
+    
+    <!-- Modal de edición de técnico -->
+    <script>
+    // Asegurarse de que la función esté en el ámbito global
+    window.abrirModalEdicion = function(tecnicoId) {
+        const modal = new bootstrap.Modal(document.getElementById('editarTecnicoModal'));
+        const modalBody = document.getElementById('editarTecnicoModalBody');
+        
+        // Mostrar spinner de carga
+        modalBody.innerHTML = `
+            <div class="d-flex justify-content-center my-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+            </div>`;
+        
+        // Cargar el formulario de edición
+        fetch(`/tecnicos/${tecnicoId}/editar/`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.text())
+        .then(html => {
+            modalBody.innerHTML = html;
+            // Inicializar los selectores de fecha
+            const dateInputs = modalBody.querySelectorAll('input[type="date"]');
+            dateInputs.forEach(input => {
+                if (input.value) {
+                    const date = new Date(input.value);
+                    input.value = date.toISOString().split('T')[0];
+                }
+            });
+            // Inicializar tooltips
+            const tooltipTriggerList = [].slice.call(modalBody.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+            // Mostrar el modal
+            modal.show();
+        })
+        .catch(error => {
+            console.error('Error al cargar el formulario de edición:', error);
+            modalBody.innerHTML = `
+                <div class="alert alert-danger m-3">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    Error al cargar el formulario de edición. Por favor, intente nuevamente.
+                </div>`;
+        });
+    }
+    
+    // Manejar el envío del formulario de edición
+    document.addEventListener('submit', function(event) {
+        const form = event.target;
+        if (form.id === 'editarTecnicoForm') {
+            event.preventDefault();
+            
+            const formData = new FormData(form);
+            
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Cerrar el modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('editarTecnicoModal'));
+                    modal.hide();
+                    
+                    // Mostrar mensaje de éxito
+                    const toast = new bootstrap.Toast(document.getElementById('toastSuccess'));
+                    const toastMessage = document.getElementById('toastSuccessMessage');
+                    toastMessage.textContent = data.message || 'Los cambios se han guardado correctamente.';
+                    toast.show();
+                    
+                    // Recargar la página para ver los cambios
+                    window.location.reload();
+                } else {
+                    // Mostrar errores del formulario
+                    const errorDiv = form.querySelector('.alert-danger') || document.createElement('div');
+                    errorDiv.className = 'alert alert-danger';
+                    errorDiv.innerHTML = `
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        ${data.message || 'Por favor, corrija los errores a continuación.'}
+                    `;
+                    form.prepend(errorDiv);
+                }
+            })
+            .catch(error => {
+                console.error('Error al guardar los cambios:', error);
+                const errorDiv = form.querySelector('.alert-danger') || document.createElement('div');
+                errorDiv.className = 'alert alert-danger';
+                errorDiv.innerHTML = `
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    Error al guardar los cambios. Por favor, intente nuevamente.
+                `;
+                form.prepend(errorDiv);
+            });
+        }
+    });
+    </script>
+    
     {% block extra_js %}{% endblock %}
 </body>
 </html>
-
-

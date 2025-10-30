@@ -11,6 +11,58 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
     <style>
+        /* Estilos para los campos de formulario */
+        .form-control:focus {
+            border-color: #8B5CF6;
+            box-shadow: 0 0 0 0.25rem rgba(139, 92, 246, 0.25);
+        }
+        
+        .form-label {
+            font-weight: 500;
+            color: #4a5568;
+            margin-bottom: 0.5rem;
+        }
+        
+        .invalid-feedback {
+            font-size: 0.85rem;
+        }
+        
+        /* Estilos para el modal */
+        .modal-content {
+            border: none;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+        
+        .modal-header {
+            padding: 1.25rem 1.5rem;
+        }
+        
+        .modal-body {
+            padding: 2rem;
+        }
+        
+        /* Estilos para los botones */
+        .btn-primary {
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
+        }
+        
+        /* Estilos para los mensajes de error */
+        .is-invalid {
+            border-color: #e53e3e !important;
+        }
+        
+        .invalid-feedback {
+            color: #e53e3e;
+        }
+        
+        /* Estilos generales */
         body {
             /* Fallback gradient background */
             background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
@@ -187,7 +239,14 @@
                 </button>
             </form>
 
-            <div class="text-center mt-4">
+            <div class="text-center mt-3">
+                <p class="mb-2">
+                    ¿No tienes una cuenta? 
+                    <a href="#" class="text-primary text-decoration-none fw-bold" data-bs-toggle="modal" data-bs-target="#registroModal">Regístrate aquí</a>
+                </p>
+            </div>
+
+            <div class="text-center mt-3">
                 <small class="text-muted">
                     Setel v1.0 - Sistema de Gestión Empresarial
                 </small>
@@ -197,5 +256,273 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Modal de Registro -->
+    <div class="modal fade" id="registroModal" tabindex="-1" aria-labelledby="registroModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border: none; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);">
+                <div class="modal-header" style="background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%); border: none;">
+                    <h5 class="modal-title" id="registroModalLabel" style="font-weight: 600; letter-spacing: 0.5px;">
+                        <i class="bi bi-person-plus me-2"></i>Crear una cuenta
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body" style="background-color: #f8f9fa; padding: 2rem;">
+                    <form id="registroForm" method="post" action="{% url 'authentication:registro' %}" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="id_username" class="form-label">Nombre de usuario</label>
+                            <input type="text" 
+                                   class="form-control form-control-lg" 
+                                   id="id_username" 
+                                   name="username" 
+                                   required
+                                   maxlength="150"
+                                   pattern="^[\w.@+-]+\Z"
+                                   style="border-radius: 8px; border: 1px solid #e2e8f0; padding: 12px 15px;"
+                                   title="Ingrese un nombre de usuario válido. Solo letras, dígitos y @/./+/-/_.">
+                            <div class="invalid-feedback">
+                                Por favor ingrese un nombre de usuario válido.
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="id_first_name" class="form-label">Nombres</label>
+                                <input type="text" class="form-control form-control-lg" id="id_first_name" name="first_name" required
+                                       style="border-radius: 8px; border: 1px solid #e2e8f0; padding: 12px 15px;">
+                                <div class="invalid-feedback">
+                                    Por favor ingrese su nombre.
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="id_last_name" class="form-label">Apellidos</label>
+                                <input type="text" class="form-control form-control-lg" id="id_last_name" name="last_name" required
+                                       style="border-radius: 8px; border: 1px solid #e2e8f0; padding: 12px 15px;">
+                                <div class="invalid-feedback">
+                                    Por favor ingrese sus apellidos.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="id_email" class="form-label">Correo electrónico</label>
+                            <input type="email" class="form-control form-control-lg" id="id_email" name="email" required
+                                   style="border-radius: 8px; border: 1px solid #e2e8f0; padding: 12px 15px;">
+                            <div class="invalid-feedback">
+                                Por favor ingrese un correo electrónico válido.
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="id_password1" class="form-label">Contraseña</label>
+                            <input type="password" 
+                                   class="form-control form-control-lg" 
+                                   id="id_password1" 
+                                   name="password1" 
+                                   required
+                                   minlength="8"
+                                   style="border-radius: 8px; border: 1px solid #e2e8f0; padding: 12px 15px;"
+                                   data-bs-toggle="tooltip"
+                                   data-bs-placement="top"
+                                   title="Su contraseña debe contener al menos 8 caracteres y no puede ser completamente numérica.">
+                            <div class="form-text">
+                                <small>Mínimo 8 caracteres. No puede ser completamente numérica.</small>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="id_password2" class="form-label">Confirmar contraseña</label>
+                            <input type="password" class="form-control form-control-lg" id="id_password2" name="password2" required
+                                   style="border-radius: 8px; border: 1px solid #e2e8f0; padding: 12px 15px;">
+                            <div class="invalid-feedback">
+                                Las contraseñas no coinciden.
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary w-100 py-2" 
+                                    style="background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%); 
+                                           border: none; 
+                                           border-radius: 8px;
+                                           font-weight: 500;
+                                           letter-spacing: 0.5px;
+                                           transition: all 0.3s ease;">
+                                <i class="bi bi-person-plus me-2"></i> Crear cuenta
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div class="text-center mt-3">
+                        <p class="mb-0">
+                            ¿Ya tienes una cuenta? 
+                            <a href="#" class="text-decoration-none fw-bold" 
+                               style="color: #7C3AED;"
+                               data-bs-dismiss="modal" 
+                               data-bs-toggle="modal" 
+                               data-bs-target="#loginModal">
+                                Inicia sesión
+                            </a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Script para manejar el envío del formulario del modal -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const registroForm = document.getElementById('registroForm');
+        const modal = bootstrap.Modal.getInstance(document.getElementById('registroModal')) || 
+                     new bootstrap.Modal(document.getElementById('registroModal'));
+        
+        // Mostrar mensajes de error en el formulario
+        function showFormErrors(form, errors) {
+            // Limpiar errores anteriores
+            form.querySelectorAll('.is-invalid').forEach(el => {
+                el.classList.remove('is-invalid');
+            });
+            
+            // Mostrar nuevos errores
+            for (const field in errors) {
+                const input = form.querySelector(`[name="${field}"]`);
+                const feedback = input ? input.nextElementSibling : null;
+                
+                if (input) {
+                    input.classList.add('is-invalid');
+                    if (feedback && feedback.classList.contains('invalid-feedback')) {
+                        feedback.textContent = errors[field][0];
+                    }
+                }
+            }
+        }
+        
+        // Manejar el envío del formulario
+        registroForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            // Validación básica del cliente
+            if (!registroForm.checkValidity()) {
+                registroForm.classList.add('was-validated');
+                return;
+            }
+            
+            // Validar que las contraseñas coincidan
+            const password1 = document.getElementById('id_password1').value;
+            const password2 = document.getElementById('id_password2').value;
+            
+            if (password1 !== password2) {
+                document.getElementById('id_password2').setCustomValidity('Las contraseñas no coinciden');
+                registroForm.classList.add('was-validated');
+                return;
+            } else {
+                document.getElementById('id_password2').setCustomValidity('');
+            }
+            
+            // Mostrar indicador de carga
+            const submitBtn = registroForm.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Registrando...';
+            
+            // Enviar datos con AJAX
+            const formData = new FormData(registroForm);
+            
+            fetch(registroForm.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Mostrar mensaje de éxito
+                    const alertHTML = `
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            ${data.message}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+                        </div>
+                    `;
+                    
+                    // Insertar alerta antes del formulario
+                    registroForm.insertAdjacentHTML('beforebegin', alertHTML);
+                    
+                    // Redirigir después de un breve retraso
+                    setTimeout(() => {
+                        window.location.href = data.redirect_url;
+                    }, 1500);
+                } else {
+                    // Mostrar errores del servidor
+                    if (data.errors) {
+                        showFormErrors(registroForm, data.errors);
+                    }
+                    
+                    // Mostrar mensaje de error general si existe
+                    if (data.message) {
+                        const alertHTML = `
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                ${data.message}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+                            </div>
+                        `;
+                        
+                        // Insertar alerta antes del formulario
+                        const existingAlert = registroForm.previousElementSibling;
+                        if (existingAlert && existingAlert.classList.contains('alert')) {
+                            existingAlert.remove();
+                        }
+                        registroForm.insertAdjacentHTML('beforebegin', alertHTML);
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Ocurrió un error al procesar la solicitud. Por favor, inténtalo de nuevo.');
+            })
+            .finally(() => {
+                // Restaurar el botón
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
+            });
+        });
+        
+        // Limpiar validación personalizada al cambiar los campos de contraseña
+        document.getElementById('id_password1').addEventListener('input', function() {
+            this.setCustomValidity('');
+            this.classList.remove('is-invalid');
+        });
+        
+        document.getElementById('id_password2').addEventListener('input', function() {
+            this.setCustomValidity('');
+            this.classList.remove('is-invalid');
+        });
+        
+        // Limpiar el formulario cuando se cierre el modal
+        document.getElementById('registroModal').addEventListener('hidden.bs.modal', function () {
+            registroForm.reset();
+            registroForm.classList.remove('was-validated');
+            
+            // Limpiar mensajes de error
+            const alerts = document.querySelectorAll('#registroModal .alert');
+            alerts.forEach(alert => alert.remove());
+            
+            // Limpiar clases de validación
+            const inputs = registroForm.querySelectorAll('.is-invalid');
+            inputs.forEach(input => input.classList.remove('is-invalid'));
+        });
+        
+        // Inicializar tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+    </script>
 </body>
 </html>

@@ -92,16 +92,12 @@ WSGI_APPLICATION = 'erp_system.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'bryan111',
-        'USER': 'root',
-        'PASSWORD': '',  # XAMPP por defecto no tiene contraseña
-        'HOST': 'localhost',
-        'PORT': '3306',
-        'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-            'charset': 'utf8mb4',
-        },
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'erp_databasee',
+        'USER': 'postgres',
+        'PASSWORD': 'bryan1999',
+        'HOST': '127.0.0.1',
+        'PORT': '5432',  # o 5432 según corresponda
     }
 }
 

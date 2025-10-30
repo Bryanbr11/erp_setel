@@ -4,7 +4,19 @@
 <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
     <div class="modal-content">
         <div class="modal-header bg-light">
-            <h5 class="modal-title">Gestión de Técnicos</h5>
+            <div>
+                <h5 class="modal-title mb-0">{{ tecnico.get_full_name|default:tecnico.usuario.get_full_name }}</h5>
+                <div class="d-flex align-items-center mt-1">
+                    <span class="badge bg-{% if tecnico.estado == 'activo' %}success{% elif tecnico.estado == 'vacaciones' %}warning{% else %}secondary{% endif %} bg-opacity-10 text-{% if tecnico.estado == 'activo' %}success{% elif tecnico.estado == 'vacaciones' %}warning{% else %}secondary{% endif %} text-uppercase" style="font-size: 0.75rem;">
+                        {{ tecnico.get_estado_display|default:"INACTIVO" }}
+                    </span>
+                    {% if tecnico.departamento %}
+                    <span class="badge bg-light text-dark ms-2" style="font-size: 0.75rem;">
+                        {{ tecnico.departamento }}
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body p-0">

@@ -1,0 +1,340 @@
+<form method="post" enctype="multipart/form-data" id="editarTecnicoForm" action="{{ action_url }}" data-tecnico-id="{{ tecnico.id }}">
+    {% csrf_token %}
+    <div class="modal-body">
+        <!-- Mostrar errores generales del formulario -->
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {% for error in form.non_field_errors %}
+                    {{ error }}
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- Información Personal -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-person"></i> Información Personal
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="{{ form.first_name.id_for_label }}" class="form-label">{{ form.first_name.label }}{% if form.first_name.field.required %} *{% endif %}</label>
+                        {{ form.first_name }}
+                        {% if form.first_name.errors %}
+                            <div class="text-danger small">{{ form.first_name.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="{{ form.last_name.id_for_label }}" class="form-label">{{ form.last_name.label }}{% if form.last_name.field.required %} *{% endif %}</label>
+                        {{ form.last_name }}
+                        {% if form.last_name.errors %}
+                            <div class="text-danger small">{{ form.last_name.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="{{ form.rut.id_for_label }}" class="form-label">{{ form.rut.label }}{% if form.rut.field.required %} *{% endif %}</label>
+                        {{ form.rut }}
+                        {% if form.rut.errors %}
+                            <div class="text-danger small">{{ form.rut.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.email.id_for_label }}" class="form-label">{{ form.email.label }}{% if form.email.field.required %} *{% endif %}</label>
+                        {{ form.email }}
+                        {% if form.email.errors %}
+                            <div class="text-danger small">{{ form.email.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.telefono.id_for_label }}" class="form-label">{{ form.telefono.label }}{% if form.telefono.field.required %} *{% endif %}</label>
+                        {{ form.telefono }}
+                        {% if form.telefono.errors %}
+                            <div class="text-danger small">{{ form.telefono.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.fecha_nacimiento.id_for_label }}" class="form-label">{{ form.fecha_nacimiento.label }}{% if form.fecha_nacimiento.field.required %} *{% endif %}</label>
+                        {{ form.fecha_nacimiento }}
+                        {% if form.fecha_nacimiento.errors %}
+                            <div class="text-danger small">{{ form.fecha_nacimiento.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.ubicacion.id_for_label }}" class="form-label">{{ form.ubicacion.label }}{% if form.ubicacion.field.required %} *{% endif %}</label>
+                        {{ form.ubicacion }}
+                        {% if form.ubicacion.errors %}
+                            <div class="text-danger small">{{ form.ubicacion.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <label for="{{ form.direccion.id_for_label }}" class="form-label">{{ form.direccion.label }}{% if form.direccion.field.required %} *{% endif %}</label>
+                        {{ form.direccion }}
+                        {% if form.direccion.errors %}
+                            <div class="text-danger small">{{ form.direccion.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Información Laboral -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-briefcase"></i> Información Laboral
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="{{ form.codigo_empleado.id_for_label }}" class="form-label">{{ form.codigo_empleado.label }}{% if form.codigo_empleado.field.required %} *{% endif %}</label>
+                        {{ form.codigo_empleado }}
+                        {% if form.codigo_empleado.errors %}
+                            <div class="text-danger small">{{ form.codigo_empleado.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="{{ form.departamento.id_for_label }}" class="form-label">{{ form.departamento.label }}{% if form.departamento.field.required %} *{% endif %}</label>
+                        {{ form.departamento }}
+                        {% if form.departamento.errors %}
+                            <div class="text-danger small">{{ form.departamento.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="{{ form.puesto.id_for_label }}" class="form-label">{{ form.puesto.label }}{% if form.puesto.field.required %} *{% endif %}</label>
+                        {{ form.puesto }}
+                        {% if form.puesto.errors %}
+                            <div class="text-danger small">{{ form.puesto.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="{{ form.fecha_ingreso.id_for_label }}" class="form-label">{{ form.fecha_ingreso.label }}{% if form.fecha_ingreso.field.required %} *{% endif %}</label>
+                        {{ form.fecha_ingreso }}
+                        {% if form.fecha_ingreso.errors %}
+                            <div class="text-danger small">{{ form.fecha_ingreso.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="{{ form.estado.id_for_label }}" class="form-label">{{ form.estado.label }}{% if form.estado.field.required %} *{% endif %}</label>
+                        {{ form.estado }}
+                        {% if form.estado.errors %}
+                            <div class="text-danger small">{{ form.estado.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="{{ form.especialidades.id_for_label }}" class="form-label">{{ form.especialidades.label }}{% if form.especialidades.field.required %} *{% endif %}</label>
+                        <div class="border p-2 rounded" style="max-height: 150px; overflow-y: auto;">
+                            {{ form.especialidades }}
+                        </div>
+                        {% if form.especialidades.errors %}
+                            <div class="text-danger small">{{ form.especialidades.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Información de Contacto y Emergencia -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-telephone"></i> Contacto y Emergencia
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.telefono_emergencia.id_for_label }}" class="form-label">{{ form.telefono_emergencia.label }}{% if form.telefono_emergencia.field.required %} *{% endif %}</label>
+                        {{ form.telefono_emergencia }}
+                        {% if form.telefono_emergencia.errors %}
+                            <div class="text-danger small">{{ form.telefono_emergencia.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.nombre_emergencia.id_for_label }}" class="form-label">{{ form.nombre_emergencia.label }}{% if form.nombre_emergencia.field.required %} *{% endif %}</label>
+                        {{ form.nombre_emergencia }}
+                        {% if form.nombre_emergencia.errors %}
+                            <div class="text-danger small">{{ form.nombre_emergencia.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Información de Previsión -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-heart-pulse"></i> Previsión y AFP
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.prevision.id_for_label }}" class="form-label">{{ form.prevision.label }}{% if form.prevision.field.required %} *{% endif %}</label>
+                        {{ form.prevision }}
+                        {% if form.prevision.errors %}
+                            <div class="text-danger small">{{ form.prevision.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.afp.id_for_label }}" class="form-label">{{ form.afp.label }}{% if form.afp.field.required %} *{% endif %}</label>
+                        {{ form.afp }}
+                        {% if form.afp.errors %}
+                            <div class="text-danger small">{{ form.afp.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Redes Sociales y Otros -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-link-45deg"></i> Redes Sociales y Otros
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.linkedin.id_for_label }}" class="form-label">{{ form.linkedin.label }}</label>
+                        {{ form.linkedin }}
+                        {% if form.linkedin.errors %}
+                            <div class="text-danger small">{{ form.linkedin.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.postre_favorito.id_for_label }}" class="form-label">{{ form.postre_favorito.label }}</label>
+                        {{ form.postre_favorito }}
+                        {% if form.postre_favorito.errors %}
+                            <div class="text-danger small">{{ form.postre_favorito.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <label for="{{ form.observaciones.id_for_label }}" class="form-label">{{ form.observaciones.label }}</label>
+                        {{ form.observaciones }}
+                        {% if form.observaciones.errors %}
+                            <div class="text-danger small">{{ form.observaciones.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Foto de Perfil -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-image"></i> Foto de Perfil
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        {% if tecnico.foto %}
+                            <div class="mb-3 text-center">
+                                <img src="{{ tecnico.foto.url }}" class="img-thumbnail" style="max-height: 200px;" alt="Foto actual">
+                                <p class="text-muted mt-2">Foto actual</p>
+                            </div>
+                        {% endif %}
+                        <label for="{{ form.foto.id_for_label }}" class="form-label">{{ form.foto.label }}</label>
+                        {{ form.foto }}
+                        {% if form.foto.errors %}
+                            <div class="text-danger small">{{ form.foto.errors.0 }}</div>
+                        {% endif %}
+                        <div class="form-text">Formatos soportados: JPG, PNG. Tamaño máximo: 5MB.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <i class="bi bi-x"></i> Cancelar
+        </button>
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-save"></i> Guardar Cambios
+        </button>
+    </div>
+</form>
+
+<script>
+// Función para capitalizar la primera letra de cada palabra
+function capitalizeWords(str) {
+    return str.replace(/\b\w/g, function(char) {
+        return char.toUpperCase();
+    });
+}
+
+// Aplicar capitalización a los campos de nombre y apellido al perder el foco
+document.addEventListener('DOMContentLoaded', function() {
+    const firstNameField = document.getElementById('{{ form.first_name.id_for_label }}');
+    const lastNameField = document.getElementById('{{ form.last_name.id_for_label }}');
+
+    if (firstNameField) {
+        // Capitalizar al perder el foco
+        firstNameField.addEventListener('blur', function() {
+            this.value = capitalizeWords(this.value.toLowerCase());
+        });
+        
+        // Capitalizar al escribir (opcional, puede ser molesto para el usuario)
+        /*
+        firstNameField.addEventListener('input', function() {
+            const cursorPos = this.selectionStart;
+            this.value = capitalizeWords(this.value.toLowerCase());
+            this.setSelectionRange(cursorPos, cursorPos);
+        });
+        */
+    }
+
+    if (lastNameField) {
+        // Capitalizar al perder el foco
+        lastNameField.addEventListener('blur', function() {
+            this.value = capitalizeWords(this.value.toLowerCase());
+        });
+        
+        // Capitalizar al escribir (opcional, puede ser molesto para el usuario)
+        /*
+        lastNameField.addEventListener('input', function() {
+            const cursorPos = this.selectionStart;
+            this.value = capitalizeWords(this.value.toLowerCase());
+            this.setSelectionRange(cursorPos, cursorPos);
+        });
+        */
+    }
+});
+
+// Inicializar los selectores de fecha
+$(document).ready(function() {
+    // Inicializar datepickers
+    $('input[type="date"]').each(function() {
+        if (this.value) {
+            const date = new Date(this.value);
+            this.value = date.toISOString().split('T')[0];
+        }
+    });
+    
+    // Inicializar tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>

@@ -28,7 +28,7 @@ class TecnicoAdmin(admin.ModelAdmin):
             'fields': ('usuario', 'codigo_empleado', 'telefono', 'direccion', 'fecha_nacimiento')
         }),
         ('Información Laboral', {
-            'fields': ('fecha_ingreso', 'estado', 'especialidades', 'salario_base')
+            'fields': ('fecha_ingreso', 'estado', 'especialidades')
         }),
         ('Adicional', {
             'fields': ('foto', 'observaciones')

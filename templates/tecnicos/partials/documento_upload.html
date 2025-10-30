@@ -1,0 +1,303 @@
+<!-- Modal para subir documento -->
+<div class="modal fade" id="subirDocumentoModal" tabindex="-1" aria-labelledby="subirDocumentoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="subirDocumentoModalLabel">Subir Documento</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <form id="documentoForm" method="post" enctype="multipart/form-data" action="{% url 'tecnicos:documento_upload' tecnico.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="{{ form.tipo.id_for_label }}" class="form-label">{{ form.tipo.label }}</label>
+                        {{ form.tipo }}
+                        <div class="invalid-feedback">{{ form.tipo.errors|join:", " }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.nombre.id_for_label }}" class="form-label">{{ form.nombre.label }}</label>
+                        {{ form.nombre }}
+                        <div class="form-text">Ingrese un nombre descriptivo para el documento.</div>
+                        <div class="invalid-feedback">{{ form.nombre.errors|join:", " }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.archivo.id_for_label }}" class="form-label">{{ form.archivo.label }}</label>
+                        {{ form.archivo }}
+                        <div class="invalid-feedback">{{ form.archivo.errors|join:", " }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.descripcion.id_for_label }}" class="form-label">{{ form.descripcion.label }}</label>
+                        {{ form.descripcion }}
+                        <div class="invalid-feedback">{{ form.descripcion.errors|join:", " }}</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                        <span class="btn-text">Subir Documento</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('documentoForm');
+    const modalElement = document.getElementById('subirDocumentoModal');
+    
+    if (!form || !modalElement) {
+        console.error('No se encontraron los elementos necesarios');
+        return;
+    }
+
+    // Inicializar el modal
+    const modal = new bootstrap.Modal(modalElement);
+    
+    // Manejar el envío del formulario
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Mostrar indicador de carga
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const spinner = submitBtn.querySelector('.spinner-border');
+        const btnText = submitBtn.querySelector('.btn-text');
+        
+        submitBtn.disabled = true;
+        spinner.classList.remove('d-none');
+        btnText.textContent = 'Subiendo...';
+        
+        // Limpiar mensajes de error anteriores
+        form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+        
+        // Crear FormData
+        const formData = new FormData(form);
+        
+        // Realizar la petición AJAX
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Error en la respuesta del servidor');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // Cerrar el modal y recargar la página
+                modal.hide();
+                window.location.reload();
+            } else {
+                // Mostrar errores de validación
+                if (data.errors) {
+                    Object.entries(data.errors).forEach(([field, errors]) => {
+                        const input = form.querySelector(`[name="${field}"]`);
+                        if (input) {
+                            input.classList.add('is-invalid');
+                            const feedback = input.nextElementSibling;
+                            if (feedback && feedback.classList.contains('invalid-feedback')) {
+                                feedback.textContent = Array.isArray(errors) ? errors[0] : errors;
+                            }
+                        }
+                    });
+                } else if (data.error) {
+                    alert(`Error: ${data.error}`);
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al subir el documento. Por favor, inténtalo de nuevo.');
+        })
+        .finally(() => {
+            // Restaurar el botón
+            submitBtn.disabled = false;
+            spinner.classList.add('d-none');
+            btnText.textContent = 'Subir Documento';
+        });
+    });
+    
+    // Limpiar el formulario cuando se cierra el modal
+    modalElement.addEventListener('hidden.bs.modal', function () {
+        form.reset();
+        form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+    });
+});
+</script>
+
+<script>
+// Esperar a que el DOM esté completamente cargado
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Inicializando script de subida de documentos');
+    
+    // Obtener referencias a los elementos del DOM
+    const form = document.getElementById('documentoForm');
+    const modalElement = document.getElementById('subirDocumentoModal');
+    
+    // Verificar que los elementos existan
+    if (!form) {
+        console.error('No se encontró el formulario con ID "documentoForm"');
+        return;
+    }
+    
+    if (!modalElement) {
+        console.error('No se encontró el modal con ID "subirDocumentoModal"');
+        return;
+    }
+    
+    // Inicializar el modal de Bootstrap
+    let modal = null;
+    try {
+        modal = new bootstrap.Modal(modalElement);
+        console.log('Modal inicializado correctamente');
+    } catch (error) {
+        console.error('Error al inicializar el modal:', error);
+        return;
+    }
+    
+    // Función para manejar el clic en el botón de abrir modal
+    function handleOpenModalClick(e) {
+        console.log('Botón de subir documento clickeado');
+        e.preventDefault();
+        if (modal) {
+            modal.show();
+        }
+    }
+    
+    // Agregar manejador de eventos al botón de abrir modal
+    const openModalButtons = document.querySelectorAll('[data-bs-toggle="modal"][data-bs-target="#subirDocumentoModal"]');
+    openModalButtons.forEach(button => {
+        button.addEventListener('click', handleOpenModalClick);
+    });
+    
+    // Manejar el envío del formulario
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        console.log('Formulario enviado');
+        
+        // Mostrar indicador de carga
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Subiendo...';
+        
+        // Limpiar mensajes de error previos
+        form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+        form.querySelectorAll('.invalid-feedback').forEach(el => el.textContent = '');
+        
+        // Crear FormData
+        const formData = new FormData(form);
+        
+        // Agregar encabezado para identificar petición AJAX
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
+        // Usar la URL del formulario
+        const url = form.getAttribute('action');
+        
+        // Realizar la petición fetch
+        fetch(url, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': csrfToken
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => {
+            console.log('Respuesta recibida:', response);
+            if (!response.ok) {
+                throw new Error('Error en la respuesta del servidor');
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Datos de respuesta:', data);
+            
+            if (data.success) {
+                // Cerrar el modal
+                if (modal) {
+                    modal.hide();
+                }
+                
+                // Mostrar mensaje de éxito
+                showAlert('success', 'Documento subido exitosamente.');
+                
+                // Recargar la página para mostrar el nuevo documento
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+                
+            } else {
+                // Mostrar errores del formulario
+                if (data.errors) {
+                    showFormErrors(form, data.errors);
+                } else if (data.error) {
+                    showAlert('danger', `Error: ${data.error}`);
+                } else {
+                    showAlert('danger', 'Error desconocido al procesar el formulario');
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error en la petición:', error);
+            showAlert('danger', 'Error al conectar con el servidor. Por favor, inténtalo de nuevo.');
+        })
+        .finally(() => {
+            // Restaurar el botón
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
+        });
+    });
+    
+    // Función para mostrar mensajes de alerta
+    function showAlert(type, message) {
+        const alertContainer = document.querySelector('#documentos .alert-container');
+        if (!alertContainer) return;
+        
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.role = 'alert';
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        `;
+        
+        // Limpiar alertas anteriores
+        alertContainer.innerHTML = '';
+        alertContainer.appendChild(alertDiv);
+    }
+    
+    // Función para mostrar errores del formulario
+    function showFormErrors(form, errors) {
+        Object.entries(errors).forEach(([field, errorMessages]) => {
+            const input = form.querySelector(`[name="${field}"]`);
+            if (input) {
+                input.classList.add('is-invalid');
+                const feedback = input.closest('.mb-3')?.querySelector('.invalid-feedback');
+                if (feedback) {
+                    feedback.textContent = Array.isArray(errorMessages) ? errorMessages.join(' ') : errorMessages;
+                }
+            }
+        });
+    }
+    
+    // Resetear el formulario cuando se cierra el modal
+    modalElement.addEventListener('hidden.bs.modal', function () {
+        form.reset();
+        // Limpiar clases de validación
+        form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+    });
+});
+</script>
